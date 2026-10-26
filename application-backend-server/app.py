@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 import json
 import os
 import time
+from datetime import datetime
 import requests
 import pymysql
 from jose import jwt
@@ -9,8 +10,11 @@ from jose import jwt
 app = Flask(__name__)
 
 # =============================================================================
-# CẤU HÌNH KẾT NỐI KEYCLOAK (OIDC) & MARIADB
+# CẤU HÌNH ĐƯỜNG DẪN & KẾT NỐI
 # =============================================================================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STUDENTS_JSON_PATH = os.path.join(BASE_DIR, "students.json")
+
 OIDC_INTERNAL_BASE = os.getenv("OIDC_INTERNAL_BASE", "http://authentication-identity-server:8080")
 DEFAULT_ISSUER = os.getenv("OIDC_ISSUER", f"{OIDC_INTERNAL_BASE}/realms/master")
 AUDIENCE = os.getenv("OIDC_AUDIENCE", "myapp")
@@ -22,6 +26,55 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "root")
 DB_NAME = os.getenv("DB_NAME", "studentdb")
 
 _JWKS_CACHE = {}
+
+
+def get_db_connection():
+    """Tạo kết nối chuẩn tới cơ sở dữ liệu MariaDB với DictCursor."""
+    return pymysql.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database=DB_NAME,
+        cursorclass=pymysql.cursors.DictCursor,
+        connect_timeout=5,
+    )
+
+
+def validate_student_payload(payload: dict, partial: bool = False) -> tuple[bool, str]:
+    """Kiểm tra tính hợp lệ của dữ liệu sinh viên đầu vào."""
+    if not isinstance(payload, dict):
+        return False, "Payload must be a JSON object"
+
+    required_fields = ["student_id", "fullname", "dob", "major"]
+    if not partial:
+        for field in required_fields:
+            if field not in payload or payload[field] is None or str(payload[field]).strip() == "":
+                return False, f"Missing required field: '{field}'"
+
+    if "student_id" in payload:
+        sid = str(payload["student_id"]).strip()
+        if not sid or len(sid) > 10:
+            return False, "'student_id' must be non-empty and at most 10 characters"
+
+    if "fullname" in payload:
+        name = str(payload["fullname"]).strip()
+        if not name or len(name) > 100:
+            return False, "'fullname' must be non-empty and at most 100 characters"
+
+    if "major" in payload:
+        major = str(payload["major"]).strip()
+        if not major or len(major) > 50:
+            return False, "'major' must be non-empty and at most 50 characters"
+
+    if "dob" in payload:
+        dob_str = str(payload["dob"]).strip()
+        try:
+            datetime.strptime(dob_str, "%Y-%m-%d")
+        except ValueError:
+            return False, "'dob' must be in YYYY-MM-DD date format"
+
+    return True, ""
 
 
 def get_jwks_for_realm(realm_name: str):
@@ -46,6 +99,14 @@ def extract_realm_from_token(token: str) -> str:
     except Exception:
         pass
     return "master"
+
+
+# =============================================================================
+# 0. ENDPOINT HEALTH CHECK
+# =============================================================================
+@app.get("/health")
+def health():
+    return jsonify(status="ok", service="application-backend-server")
 
 
 # =============================================================================
@@ -90,27 +151,22 @@ def secure():
 # =============================================================================
 @app.get("/student")
 def student():
-    # TODO [Thành viên 2 - Mở rộng #2]: Có thể cập nhật tên thật các thành viên trong students.json
-    with open("students.json", "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return jsonify(data)
+    try:
+        with open(STUDENTS_JSON_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify(error=f"Error reading students.json: {str(e)}"), 500
 
 
 # =============================================================================
-# 4. ENDPOINT ĐỌC SINH VIÊN TỪ DATABASE MARIADB (/students-db) - [Mở rộng #3]
+# 4. ENDPOINTS CRUD VỚI DATABASE MARIADB (/students-db) - [Mở rộng #3]
 # =============================================================================
 @app.get("/students-db")
-def students_db():
+def get_students_db():
+    """Lấy danh sách sinh viên trực tiếp từ bảng students trong CSDL studentdb."""
     try:
-        conn = pymysql.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            database=DB_NAME,
-            cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=5,
-        )
+        conn = get_db_connection()
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -120,6 +176,118 @@ def students_db():
         return jsonify(source="MariaDB (studentdb.students)", count=len(rows), students=rows)
     except Exception as e:
         return jsonify(error=f"Database connection error: {str(e)}"), 500
+
+
+@app.post("/students-db")
+def create_student_db():
+    """Tạo mới một sinh viên trong bảng students (CREATE)."""
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return jsonify(error="Invalid or missing JSON request body"), 400
+
+    is_valid, err_msg = validate_student_payload(payload, partial=False)
+    if not is_valid:
+        return jsonify(error=err_msg), 400
+
+    student_id = str(payload["student_id"]).strip()
+    fullname = str(payload["fullname"]).strip()
+    dob = str(payload["dob"]).strip()
+    major = str(payload["major"]).strip()
+
+    try:
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO students (student_id, fullname, dob, major) VALUES (%s, %s, %s, %s);",
+                    (student_id, fullname, dob, major),
+                )
+                conn.commit()
+                new_id = cur.lastrowid
+        return (
+            jsonify(
+                message="Student created successfully",
+                student={
+                    "id": new_id,
+                    "student_id": student_id,
+                    "fullname": fullname,
+                    "dob": dob,
+                    "major": major,
+                },
+            ),
+            201,
+        )
+    except pymysql.err.IntegrityError as e:
+        if e.args and e.args[0] == 1062:
+            return jsonify(error=f"Student ID '{student_id}' already exists"), 409
+        return jsonify(error=f"Database integrity error: {str(e)}"), 400
+    except Exception as e:
+        return jsonify(error=f"Database error: {str(e)}"), 500
+
+
+@app.put("/students-db/<student_id>")
+def update_student_db(student_id: str):
+    """Cập nhật thông tin sinh viên theo student_id (UPDATE)."""
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return jsonify(error="Invalid or missing JSON request body"), 400
+
+    is_valid, err_msg = validate_student_payload(payload, partial=True)
+    if not is_valid:
+        return jsonify(error=err_msg), 400
+
+    fields_to_update = []
+    values = []
+    for col in ["fullname", "dob", "major"]:
+        if col in payload:
+            fields_to_update.append(f"{col} = %s")
+            values.append(str(payload[col]).strip())
+
+    if not fields_to_update:
+        return jsonify(error="No valid fields provided to update"), 400
+
+    values.append(student_id)
+    sql = f"UPDATE students SET {', '.join(fields_to_update)} WHERE student_id = %s;"
+
+    try:
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, tuple(values))
+                conn.commit()
+                if cur.rowcount == 0:
+                    # Kiểm tra xem bản ghi có thực sự tồn tại không
+                    cur.execute("SELECT id FROM students WHERE student_id = %s;", (student_id,))
+                    if not cur.fetchone():
+                        return jsonify(error=f"Student '{student_id}' not found"), 404
+
+                cur.execute(
+                    "SELECT id, student_id, fullname, CAST(dob AS CHAR) AS dob, major FROM students WHERE student_id = %s;",
+                    (student_id,),
+                )
+                updated_student = cur.fetchone()
+
+        return jsonify(message="Student updated successfully", student=updated_student), 200
+    except pymysql.err.IntegrityError as e:
+        return jsonify(error=f"Database integrity error: {str(e)}"), 400
+    except Exception as e:
+        return jsonify(error=f"Database error: {str(e)}"), 500
+
+
+@app.delete("/students-db/<student_id>")
+def delete_student_db(student_id: str):
+    """Xóa một sinh viên theo student_id (DELETE)."""
+    try:
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM students WHERE student_id = %s;", (student_id,))
+                conn.commit()
+                if cur.rowcount == 0:
+                    return jsonify(error=f"Student '{student_id}' not found"), 404
+        return jsonify(message="Student deleted successfully", student_id=student_id), 200
+    except Exception as e:
+        return jsonify(error=f"Database error: {str(e)}"), 500
 
 
 if __name__ == "__main__":
