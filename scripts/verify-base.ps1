@@ -4,6 +4,30 @@
 # =============================================================================
 $ErrorActionPreference = "Continue"
 
+$gfUser = if ($env:GF_SECURITY_ADMIN_USER) { $env:GF_SECURITY_ADMIN_USER } else { "admin" }
+$gfPass = if ($env:GF_SECURITY_ADMIN_PASSWORD) { $env:GF_SECURITY_ADMIN_PASSWORD } else { "admin" }
+$gfHeaders = @{ Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${gfUser}:${gfPass}")) }
+
+# In trạng thái UP/DOWN của từng target trong 1 job, dựa trên metric 'up' do Prometheus tự sinh
+function Check-PromTargets($Job) {
+    try {
+        $r = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/query" -Body @{ query = "up{job=`"$Job`"}" } -TimeoutSec 5
+        if (-not $r.data.result) {
+            Write-Host "[WARN] job=$Job chua co target nao (Prometheus chua chay hoac chua scrape)." -ForegroundColor Yellow
+            return
+        }
+        foreach ($t in $r.data.result) {
+            if ($t.value[1] -eq "1") {
+                Write-Host "[PASS] job=$Job $($t.metric.instance) -> UP" -ForegroundColor Green
+            } else {
+                Write-Host "[FAIL] job=$Job $($t.metric.instance) -> DOWN" -ForegroundColor Red
+            }
+        }
+    } catch {
+        Write-Host "[WARN] Prometheus API -> $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host "   MYMINICLOUD - KIEM THU TU DONG PHAN CO BAN (5.0 DIEM)         " -ForegroundColor Cyan
 Write-Host "=================================================================" -ForegroundColor Cyan
@@ -40,9 +64,25 @@ docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 dig @dn
 Write-Host "`n[7/10] Monitoring Prometheus & Node Exporter (Port 9090 & 9100)..." -ForegroundColor White
 Check-Url "Node Exporter Metrics" "http://localhost:9100/metrics"
 Check-Url "Prometheus Targets API" "http://localhost:9090/api/v1/targets"
+Check-PromTargets "node"
+try {
+    $cpu = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/query" -Body @{ query = "count(node_cpu_seconds_total)" } -TimeoutSec 5
+    Write-Host "[PASS] node_cpu_seconds_total co $($cpu.data.result[0].value[1]) series." -ForegroundColor Green
+} catch {
+    Write-Host "[WARN] Query node_cpu_seconds_total -> $($_.Exception.Message)" -ForegroundColor Yellow
+}
 
 Write-Host "`n[8/10] Monitoring Grafana Dashboard (Port 3000)..." -ForegroundColor White
 Check-Url "Grafana UI" "http://localhost:3000/login"
+try {
+    $ds = Invoke-RestMethod -Uri "http://localhost:3000/api/datasources/uid/prometheus/health" -Headers $gfHeaders -TimeoutSec 5
+    Write-Host "[PASS] Datasource Prometheus -> $($ds.message)" -ForegroundColor Green
+    $nef = Invoke-RestMethod -Uri "http://localhost:3000/api/search?query=Node%20Exporter%20Full" -Headers $gfHeaders -TimeoutSec 5
+    if ($nef) { Write-Host "[PASS] Dashboard '$($nef[0].title)' da co san." -ForegroundColor Green }
+    else { Write-Host "[WARN] Chua co dashboard Node Exporter Full." -ForegroundColor Yellow }
+} catch {
+    Write-Host "[WARN] Grafana API -> $($_.Exception.Message)" -ForegroundColor Yellow
+}
 
 Write-Host "`n[9/10] API Gateway Reverse Proxy (Port 80: /, /api/hello, /auth/)..." -ForegroundColor White
 Check-Url "Gateway Web (/)" "http://localhost/"

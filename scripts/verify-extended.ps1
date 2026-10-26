@@ -4,6 +4,30 @@
 # =============================================================================
 $ErrorActionPreference = "Continue"
 
+$gfUser = if ($env:GF_SECURITY_ADMIN_USER) { $env:GF_SECURITY_ADMIN_USER } else { "admin" }
+$gfPass = if ($env:GF_SECURITY_ADMIN_PASSWORD) { $env:GF_SECURITY_ADMIN_PASSWORD } else { "admin" }
+$gfHeaders = @{ Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${gfUser}:${gfPass}")) }
+
+# In trạng thái UP/DOWN của từng target trong 1 job, dựa trên metric 'up' do Prometheus tự sinh
+function Check-PromTargets($Job) {
+    try {
+        $r = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/query" -Body @{ query = "up{job=`"$Job`"}" } -TimeoutSec 5
+        if (-not $r.data.result) {
+            Write-Host "[WARN] job=$Job chua co target nao (Prometheus chua chay hoac chua scrape)." -ForegroundColor Yellow
+            return
+        }
+        foreach ($t in $r.data.result) {
+            if ($t.value[1] -eq "1") {
+                Write-Host "[PASS] job=$Job $($t.metric.instance) -> UP" -ForegroundColor Green
+            } else {
+                Write-Host "[FAIL] job=$Job $($t.metric.instance) -> DOWN" -ForegroundColor Red
+            }
+        }
+    } catch {
+        Write-Host "[WARN] Prometheus API -> $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
 Write-Host "=================================================================" -ForegroundColor Magenta
 Write-Host "   MYMINICLOUD - KIEM THU TU DONG 10 MUC MO RONG (5.0 DIEM)      " -ForegroundColor Magenta
 Write-Host "=================================================================" -ForegroundColor Magenta
@@ -55,11 +79,20 @@ docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 sh -c "
 "
 
 Write-Host "`n[Mo rong #7] Prometheus Scrape Target 'web' (web-frontend-server:80)..." -ForegroundColor White
+Check-PromTargets "web"
+
+Write-Host "`n[Mo rong #8] Grafana Dashboard 'System Health of <MSSV>' (3 bieu do)..." -ForegroundColor White
 try {
-    $m = Invoke-WebRequest -Uri "http://localhost:8080/metrics" -UseBasicParsing -TimeoutSec 5
-    Write-Host "[PASS] Endpoint /metrics tren Web Server tra ve HTTP $($m.StatusCode)" -ForegroundColor Green
+    $found = Invoke-RestMethod -Uri "http://localhost:3000/api/search?query=System%20Health%20of" -Headers $gfHeaders -TimeoutSec 5
+    if ($found) {
+        $dash = (Invoke-RestMethod -Uri "http://localhost:3000/api/dashboards/uid/$($found[0].uid)" -Headers $gfHeaders -TimeoutSec 5).dashboard
+        Write-Host "[PASS] Dashboard '$($dash.title)' co $($dash.panels.Count) bieu do:" -ForegroundColor Green
+        foreach ($p in $dash.panels) { Write-Host "  - $($p.title)" -ForegroundColor Green }
+    } else {
+        Write-Host "[WARN] Khong tim thay dashboard 'System Health of <MSSV>'." -ForegroundColor Yellow
+    }
 } catch {
-    Write-Host "[WARN] /metrics -> $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "[WARN] Grafana API -> $($_.Exception.Message)" -ForegroundColor Yellow
 }
 
 Write-Host "`n[Mo rong #9] API Gateway Route /student/..." -ForegroundColor White

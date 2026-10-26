@@ -5,6 +5,23 @@
 # =============================================================================
 set -u
 
+GF_AUTH="${GF_SECURITY_ADMIN_USER:-admin}:${GF_SECURITY_ADMIN_PASSWORD:-admin}"
+
+# In trạng thái UP/DOWN của từng target trong 1 job, dựa trên metric 'up' do Prometheus tự sinh
+check_targets() {
+  local lines
+  lines=$(curl -s -G http://localhost:9090/api/v1/query --data-urlencode "query=up{job=\"$1\"}" \
+    | grep -o '"instance":"[^"]*"[^]]*"[01]"\]' \
+    | sed -E 's/"instance":"([^"]*)".*"([01])"\]/\1 \2/')
+  if [ -z "$lines" ]; then
+    echo "  [WARN] job=$1 chua co target nao (Prometheus chua chay hoac chua scrape)."
+    return
+  fi
+  echo "$lines" | while read -r instance value; do
+    if [ "$value" = "1" ]; then echo "  [PASS] job=$1 $instance -> UP"; else echo "  [FAIL] job=$1 $instance -> DOWN"; fi
+  done
+}
+
 echo "================================================================="
 echo "   MYMINICLOUD - KIEM THU TU DONG 10 MUC MO RONG (5.0 DIEM)      "
 echo "================================================================="
@@ -44,7 +61,16 @@ docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 sh -c '
 '
 
 echo -e "\n[Mo rong #7] Prometheus Scrape Target 'web' (web-frontend-server:80/metrics)..."
-curl -s http://localhost:8080/metrics
+check_targets web
+
+echo -e "\n[Mo rong #8] Grafana Dashboard 'System Health of <MSSV>' (3 bieu do)..."
+DASH_UID=$(curl -s -u "$GF_AUTH" "http://localhost:3000/api/search?query=System%20Health%20of" | grep -o '"uid":"[^"]*"' | head -n 1 | cut -d'"' -f4)
+if [ -n "$DASH_UID" ]; then
+  echo "  Dashboard uid=$DASH_UID:"
+  curl -s -u "$GF_AUTH" "http://localhost:3000/api/dashboards/uid/$DASH_UID" | grep -o '"title":"[^"]*"' | sed 's/^/    /'
+else
+  echo "  [WARN] Khong tim thay dashboard 'System Health of <MSSV>'."
+fi
 
 echo -e "\n[Mo rong #9] API Gateway Route /student/..."
 curl -s http://localhost/student/ | head -n 20 && echo ""
