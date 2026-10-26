@@ -1,0 +1,245 @@
+# =============================================================================
+# MYMINICLOUD - DOCKER COMPOSE ORCHESTRATION
+# Hệ thống mô phỏng Cloud Platform gồm 9 loại máy chủ cốt lõi (+ Node Exporter)
+# Mạng nội bộ: cloud-net (Hỗ trợ đầy đủ network aliases cho cả tên dài & ngắn)
+# =============================================================================
+
+networks:
+  cloud-net:
+    name: cloud-net
+    driver: bridge
+
+services:
+  # ---------------------------------------------------------------------------
+  # 1. WEB FRONTEND SERVER (Nginx Static Hosting & Blog) - [Thành viên 1]
+  # ---------------------------------------------------------------------------
+  web-frontend-server:
+    build:
+      context: ./web-frontend-server
+      args:
+        SERVER_NODE_NAME: "web-frontend-server1 (Primary)"
+    image: ${DOCKERHUB_USERNAME:-kwanfam}/myminicloud-web:${PROJECT_TAG:-dev}
+    container_name: web-frontend-server
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    networks:
+      cloud-net:
+        aliases:
+          - web
+          - web-server
+          - web-frontend-server1
+          - web-frontend-server.cloud.local
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 1B. WEB FRONTEND SERVER 2 (Dùng cho Mở rộng #10: Load Balancing Round Robin)
+  # ---------------------------------------------------------------------------
+  web-frontend-server2:
+    build:
+      context: ./web-frontend-server
+      args:
+        SERVER_NODE_NAME: "web-frontend-server2 (Replica)"
+    image: ${DOCKERHUB_USERNAME:-kwanfam}/myminicloud-web:${PROJECT_TAG:-dev}
+    container_name: web-frontend-server2
+    ports:
+      - "${WEB2_PORT:-8082}:80"
+    networks:
+      cloud-net:
+        aliases:
+          - web2
+          - web-frontend-server2
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 2. APPLICATION BACKEND SERVER (Flask REST API & OIDC) - [Thành viên 2]
+  # ---------------------------------------------------------------------------
+  application-backend-server:
+    build: ./application-backend-server
+    image: ${DOCKERHUB_USERNAME:-kwanfam}/myminicloud-app:${PROJECT_TAG:-dev}
+    container_name: application-backend-server
+    ports:
+      - "${APP_PORT:-8085}:8081"
+    environment:
+      OIDC_ISSUER: "${OIDC_ISSUER:-http://authentication-identity-server:8080/realms/master}"
+      OIDC_INTERNAL_BASE: "http://authentication-identity-server:8080"
+      OIDC_AUDIENCE: "${OIDC_AUDIENCE:-myapp}"
+      DB_HOST: "relational-database-server"
+      DB_PORT: "3306"
+      DB_USER: "root"
+      DB_PASSWORD: "${MARIADB_ROOT_PASSWORD:-root}"
+      DB_NAME: "studentdb"
+    depends_on:
+      - relational-database-server
+    networks:
+      cloud-net:
+        aliases:
+          - app
+          - app-server
+          - app-backend
+          - app-backend.cloud.local
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 3. RELATIONAL DATABASE SERVER (MariaDB 11) - [Thành viên 2]
+  # ---------------------------------------------------------------------------
+  relational-database-server:
+    image: mariadb:11
+    container_name: relational-database-server
+    environment:
+      MARIADB_ROOT_PASSWORD: "${MARIADB_ROOT_PASSWORD:-root}"
+      MARIADB_DATABASE: "${MARIADB_DATABASE:-minicloud}"
+    volumes:
+      - ./relational-database-server/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    networks:
+      cloud-net:
+        aliases:
+          - db
+          - mysql
+          - mariadb
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 4. AUTHENTICATION & IDENTITY SERVER (Keycloak OIDC) - [Thành viên 3]
+  # ---------------------------------------------------------------------------
+  authentication-identity-server:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: authentication-identity-server
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: "${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}"
+      KC_BOOTSTRAP_ADMIN_PASSWORD: "${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin}"
+      KC_HOSTNAME: "${KC_HOSTNAME:-localhost}"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./authentication-identity-server/import:/opt/keycloak/data/import:ro
+    ports:
+      - "${AUTH_PORT:-8081}:8080"
+    networks:
+      cloud-net:
+        aliases:
+          - keycloak
+          - auth
+          - keycloak.cloud.local
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 5. OBJECT STORAGE SERVER (MinIO S3 Compatible) - [Thành viên 3]
+  # ---------------------------------------------------------------------------
+  object-storage-server:
+    image: minio/minio:latest
+    container_name: object-storage-server
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-minioadmin}"
+    volumes:
+      - ./object-storage-server/data:/data
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    networks:
+      cloud-net:
+        aliases:
+          - minio
+          - storage
+          - minio.cloud.local
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 6. INTERNAL DNS SERVER (Bind9 - Zone cloud.local) - [Thành viên 3]
+  # ---------------------------------------------------------------------------
+  internal-dns-server:
+    image: internetsystemsconsortium/bind9:9.18
+    container_name: internal-dns-server
+    ports:
+      - "${DNS_PORT:-1053}:53/udp"
+      - "${DNS_PORT:-1053}:53/tcp"
+    volumes:
+      - ./internal-dns-server/named.conf.options:/etc/bind/named.conf.options:ro
+      - ./internal-dns-server/named.conf.local:/etc/bind/named.conf.local:ro
+      - ./internal-dns-server/db.cloud.local:/etc/bind/db.cloud.local:ro
+    networks:
+      cloud-net:
+        aliases:
+          - dns
+          - dns-server
+          - ns.cloud.local
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 7A. MONITORING NODE EXPORTER (Host/Container Metrics) - [Thành viên 4]
+  # ---------------------------------------------------------------------------
+  monitoring-node-exporter-server:
+    image: prom/node-exporter:latest
+    container_name: monitoring-node-exporter-server
+    ports:
+      - "${NODE_EXPORTER_PORT:-9100}:9100"
+    networks:
+      cloud-net:
+        aliases:
+          - node-exporter
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 7B. MONITORING PROMETHEUS SERVER (Metrics Collector) - [Thành viên 4]
+  # ---------------------------------------------------------------------------
+  monitoring-prometheus-server:
+    image: prom/prometheus:latest
+    container_name: monitoring-prometheus-server
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring-prometheus-server/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - monitoring-node-exporter-server
+    networks:
+      cloud-net:
+        aliases:
+          - prometheus
+          - monitor
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 8. MONITORING GRAFANA DASHBOARD SERVER (Visualization) - [Thành viên 4]
+  # ---------------------------------------------------------------------------
+  monitoring-grafana-dashboard-server:
+    image: grafana/grafana:latest
+    container_name: monitoring-grafana-dashboard-server
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GF_SECURITY_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GF_SECURITY_ADMIN_PASSWORD:-admin}"
+    volumes:
+      - ./monitoring-grafana-dashboard-server/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - monitoring-prometheus-server
+    networks:
+      cloud-net:
+        aliases:
+          - grafana
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 9. API GATEWAY / REVERSE PROXY SERVER (Nginx Gateway & LB) - [Thành viên 1]
+  # ---------------------------------------------------------------------------
+  api-gateway-proxy-server:
+    image: nginx:stable
+    container_name: api-gateway-proxy-server
+    depends_on:
+      - web-frontend-server
+      - application-backend-server
+      - authentication-identity-server
+    ports:
+      - "${PROXY_PORT:-80}:80"
+    volumes:
+      - ./api-gateway-proxy-server/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      cloud-net:
+        aliases:
+          - proxy
+          - gateway
+    restart: unless-stopped

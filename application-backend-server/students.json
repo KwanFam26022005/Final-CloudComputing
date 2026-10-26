@@ -1,0 +1,32 @@
+[
+  {
+    "id": "SV001",
+    "name": "Nguyen Van A (Member 1)",
+    "major": "Cloud Computing & DevOps",
+    "gpa": 3.85
+  },
+  {
+    "id": "SV002",
+    "name": "Tran Thi B (Member 2)",
+    "major": "Software Engineering",
+    "gpa": 3.78
+  },
+  {
+    "id": "SV003",
+    "name": "Le Van C (Member 3)",
+    "major": "Cyber Security & Network",
+    "gpa": 3.82
+  },
+  {
+    "id": "SV004",
+    "name": "Pham Thi D (Member 4)",
+    "major": "Data Science & Cloud",
+    "gpa": 3.90
+  },
+  {
+    "id": "SV005",
+    "name": "Hoang Minh E",
+    "major": "Information Systems",
+    "gpa": 3.65
+  }
+]

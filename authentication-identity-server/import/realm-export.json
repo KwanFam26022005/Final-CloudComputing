@@ -1,0 +1,56 @@
+{
+  "realm": "realm_sv001",
+  "enabled": true,
+  "displayName": "MyMiniCloud Student Realm (realm_sv001)",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "clients": [
+    {
+      "clientId": "flask-app",
+      "name": "Flask Application Backend Client",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "sv01",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Sinh Vien",
+      "lastName": "01",
+      "email": "sv01@cloud.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "sv01pass",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "sv02",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Sinh Vien",
+      "lastName": "02",
+      "email": "sv02@cloud.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "sv02pass",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyMiniCloud – Home</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 820px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1e293b; background: #f8fafc; }
+    header { background: #0f172a; color: #fff; padding: 24px; border-radius: 12px; margin-bottom: 24px; }
+    h1 { margin: 0 0 8px 0; }
+    .badge { display: inline-block; background: #2563eb; color: #fff; padding: 4px 12px; border-radius: 999px; font-size: 0.85rem; }
+    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px; }
+    a { color: #2563eb; text-decoration: none; font-weight: 600; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MyMiniCloud – Home</h1>
+    <span class="badge">Served by: __SERVER_NODE_NAME__</span>
+  </header>
+
+  <div class="card">
+    <h2>Chào mừng đến với Hệ thống Đám mây Thu nhỏ (MyMiniCloud)</h2>
+    <p>Trang tĩnh được phục vụ bởi <strong>Nginx Web Frontend Server</strong> trong mạng nội bộ <code>cloud-net</code>.</p>
+    <p>👉 <a href="/blog/">Truy cập Trang Blog Cá Nhân (/blog/)</a></p>
+  </div>
+
+  <!-- TODO [Thành viên 1 - Mở rộng #1]: Tùy chỉnh tiêu đề và mô tả 3 bài viết blog cá nhân bên dưới -->
+  <div class="card">
+    <h3>📝 Danh sách bài viết Blog mới nhất</h3>
+    <ul>
+      <li><a href="/blog/blog1.html">Bài viết 1: Tổng quan Kiến trúc Điện toán Đám mây & Container hóa</a></li>
+      <li><a href="/blog/blog2.html">Bài viết 2: Tìm hiểu Microservices, API Gateway & Cân bằng tải Nginx</a></li>
+      <li><a href="/blog/blog3.html">Bài viết 3: Giám sát Hạ tầng Cloud với Prometheus & Grafana</a></li>
+    </ul>
+  </div>
+</body>
+</html>

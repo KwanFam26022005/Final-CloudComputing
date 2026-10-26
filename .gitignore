@@ -1,0 +1,42 @@
+# =============================================================================
+# MyMiniCloud - Git Ignore Rules
+# =============================================================================
+
+# Environment files (chứa mật khẩu/secret cá nhân)
+.env
+.env.local
+.env.*.local
+
+# Dữ liệu runtime của các container (MinIO, Database, Prometheus, Grafana)
+object-storage-server/data/*
+!object-storage-server/data/.gitkeep
+relational-database-server/data/
+monitoring-prometheus-server/data/
+monitoring-grafana-dashboard-server/data/
+
+# Python / Flask artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+
+# IDE & OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs & temporary files
+*.log
+logs/
+tmp/
+temp/
+*.zip
+*.tar.gz

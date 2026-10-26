@@ -1,0 +1,27 @@
+server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Header định danh Node phục vụ kiểm thử Load Balancing Round Robin (Mở rộng #10)
+    add_header X-Served-By "__SERVER_NODE_NAME__" always;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    # Phục vụ trang Blog cá nhân qua alias (Cơ bản #1 & Mở rộng #1)
+    location ^~ /blog/ {
+        alias /usr/share/nginx/html/blog/;
+        index index.html;
+        autoindex off;
+    }
+
+    # Endpoint Prometheus Metrics giúp job 'web' trong Prometheus luôn đạt trạng thái UP (Mở rộng #7)
+    location = /metrics {
+        default_type text/plain;
+        return 200 "# HELP web_frontend_up Trang thai hoat dong cua Web Frontend Server\n# TYPE web_frontend_up gauge\nweb_frontend_up{node=\"__SERVER_NODE_NAME__\"} 1\n";
+    }
+}

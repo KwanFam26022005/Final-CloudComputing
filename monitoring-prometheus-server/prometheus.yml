@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # ===========================================================================
+  # 1. CƠ BẢN #7: Giám sát tài nguyên hệ thống qua Node Exporter
+  # ===========================================================================
+  - job_name: 'node'
+    static_configs:
+      - targets: ['monitoring-node-exporter-server:9100']
+
+  # ===========================================================================
+  # 2. MỞ RỘNG #7 (0.5 điểm): Giám sát trực tiếp web-frontend-server
+  # (Endpoint /metrics đã được cấu hình sẵn trong web-frontend-server/conf.default)
+  # ===========================================================================
+  - job_name: 'web'
+    static_configs:
+      - targets: ['web-frontend-server:80']

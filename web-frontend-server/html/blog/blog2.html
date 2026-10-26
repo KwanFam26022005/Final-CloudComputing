@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Blog 2 – API Gateway & Load Balancing</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 780px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1e293b; }
+    img { max-width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; margin: 16px 0; }
+    a { color: #2563eb; font-weight: 600; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <!-- TODO [Thành viên 1]: Có thể cập nhật thêm nội dung hoặc ảnh minh họa cá nhân -->
+  <h1>Bài viết 2: Tìm hiểu Microservices, API Gateway & Cân bằng tải Nginx</h1>
+  <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='720' height='220'><rect width='100%' height='100%' fill='%23065f46'/><text x='50%' y='50%' fill='white' font-size='24' font-family='sans-serif' text-anchor='middle' dominant-baseline='middle'>Nginx Reverse Proxy &amp; Round Robin Load Balancer</text></svg>" alt="API Gateway Illustration" />
+  <p>API Gateway đóng vai trò là điểm truy cập duy nhất (Single Entry Point) cho toàn bộ hệ thống, giúp ẩn cấu trúc mạng nội bộ và định tuyến yêu cầu theo đường dẫn (Path-based Routing).</p>
+  <p>Khi lưu lượng tăng cao, thuật toán <strong>Round Robin</strong> phân phối tuần tự các request giữa <code>web-frontend-server1</code> và <code>web-frontend-server2</code> để tăng tính sẵn sàng.</p>
+  <hr />
+  <p><a href="/blog/">← Quay lại danh sách Blog</a> | <a href="/">🏠 Quay lại Trang chính (Home)</a></p>
+</body>
+</html>
