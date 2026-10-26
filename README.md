@@ -42,10 +42,10 @@ Toàn bộ thành viên trong nhóm **BẮT BUỘC** đọc kỹ bộ tài liệ
 
 | Thành viên | Vai trò (Role) | Phạm vi thư mục sở hữu (Code Ownership) | Nhiệm vụ Mở rộng (5.0đ) | Phần Báo Cáo |
 | :--- | :--- | :--- | :--- | :--- |
-| **Thành viên 1** | **Gateway & Web Lead** | `web-frontend-server/`, `api-gateway-proxy-server/`, `docker-compose.yml` | **#1** (Blog 3 bài viết), **#9** (Route `/student/`), **#10** (Load Balancing Round Robin 2 Web) | Chương 1 & Chương 2 |
-| **Thành viên 2** | **Backend & Data Lead** | `application-backend-server/`, `relational-database-server/` | **#2** (API `/student` JSON), **#3** (CSDL `studentdb` + bảng `students` + CRUD + `/students-db`) | Chương 3 (App & DB) |
-| **Thành viên 3** | **Security, Storage & DNS Lead** | `authentication-identity-server/`, `object-storage-server/`, `internal-dns-server/` | **#4** (Keycloak Realm, Client, User, `/secure`), **#5** (MinIO `profile-pics` & `documents`), **#6** (DNS records) | Chương 3 & 4 (Auth, S3, DNS) |
-| **Thành viên 4** | **Observability & Cloud Ops Lead** | `monitoring-prometheus-server/`, `monitoring-grafana-dashboard-server/`, `scripts/` | **#7** (Prometheus scrape `web` UP), **#8** (Grafana Dashboard 3 biểu đồ CPU/RAM/Net) + **Deploy AWS EC2** | Chương 4, Chương 5 & Phụ lục |
+| **Duy** | **Gateway & Web Lead** | `web-frontend-server/`, `api-gateway-proxy-server/`, `docker-compose.yml` | **#1** (Blog 3 bài viết), **#9** (Route `/student/`), **#10** (Load Balancing Round Robin 2 Web) | Chương 1 & Chương 2 |
+| **Khoa** | **Backend & Data Lead** | `application-backend-server/`, `relational-database-server/` | **#2** (API `/student` JSON), **#3** (CSDL `studentdb` + bảng `students` + CRUD + `/students-db`) | Chương 3 (App & DB) |
+| **Hùng** | **Security, Storage & DNS Lead** | `authentication-identity-server/`, `object-storage-server/`, `internal-dns-server/` | **#4** (Keycloak Realm, Client, User, `/secure`), **#5** (MinIO `profile-pics` & `documents`), **#6** (DNS records) | Chương 3 & 4 (Auth, S3, DNS) |
+| **Nhật** | **Observability & Cloud Ops Lead** | `monitoring-prometheus-server/`, `monitoring-grafana-dashboard-server/`, `scripts/` | **#7** (Prometheus scrape `web` UP), **#8** (Grafana Dashboard 3 biểu đồ CPU/RAM/Net) + **Deploy AWS EC2** | Chương 4, Chương 5 & Phụ lục |
 
 > Chi tiết checklist từng bước cho mỗi thành viên xem tại: [**`docs/04-TEAM-WORK-DIVISION.md`**](./docs/04-TEAM-WORK-DIVISION.md).
 
