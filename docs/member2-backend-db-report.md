@@ -55,8 +55,8 @@ CMD ["python", "app.py"]
 
 File `requirements.txt` chỉ bao gồm 4 thư viện chuẩn bám sát yêu cầu đề bài:
 ```text
-flask==3.0.0
-requests==2.31.0
+flask==3.0.3
+requests==2.32.3
 python-jose[cryptography]==3.3.0
 pymysql==1.1.1
 ```

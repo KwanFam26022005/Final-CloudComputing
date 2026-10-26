@@ -148,6 +148,10 @@ class AppServerTestCase(unittest.TestCase):
         res_put_404 = self.client.put("/students-db/SV999", json={"major": "Cloud"})
         self.assertEqual(res_put_404.status_code, 404)
 
+        # 1b. PUT 400 when field value is null/None (prevent silent "None" string coercion)
+        res_put_null = self.client.put("/students-db/SV005", json={"fullname": None})
+        self.assertEqual(res_put_null.status_code, 400)
+
         # 2. PUT 200 when student found (rowcount = 1)
         mock_cursor.rowcount = 1
         mock_cursor.fetchone.return_value = {

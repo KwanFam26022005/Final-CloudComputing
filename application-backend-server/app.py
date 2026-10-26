@@ -53,22 +53,30 @@ def validate_student_payload(payload: dict, partial: bool = False) -> tuple[bool
                 return False, f"Missing required field: '{field}'"
 
     if "student_id" in payload:
-        sid = str(payload["student_id"]).strip()
+        if payload["student_id"] is None or not isinstance(payload["student_id"], str):
+            return False, "'student_id' must be a non-empty string"
+        sid = payload["student_id"].strip()
         if not sid or len(sid) > 10:
             return False, "'student_id' must be non-empty and at most 10 characters"
 
     if "fullname" in payload:
-        name = str(payload["fullname"]).strip()
+        if payload["fullname"] is None or not isinstance(payload["fullname"], str):
+            return False, "'fullname' must be a non-empty string"
+        name = payload["fullname"].strip()
         if not name or len(name) > 100:
             return False, "'fullname' must be non-empty and at most 100 characters"
 
     if "major" in payload:
-        major = str(payload["major"]).strip()
+        if payload["major"] is None or not isinstance(payload["major"], str):
+            return False, "'major' must be a non-empty string"
+        major = payload["major"].strip()
         if not major or len(major) > 50:
             return False, "'major' must be non-empty and at most 50 characters"
 
     if "dob" in payload:
-        dob_str = str(payload["dob"]).strip()
+        if payload["dob"] is None or not isinstance(payload["dob"], str):
+            return False, "'dob' must be a string in YYYY-MM-DD date format"
+        dob_str = payload["dob"].strip()
         try:
             datetime.strptime(dob_str, "%Y-%m-%d")
         except ValueError:
