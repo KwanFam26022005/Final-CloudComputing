@@ -1,0 +1,4 @@
+# No host data, credentials or reports are needed to build the official source.
+*
+!Dockerfile
+!.dockerignore

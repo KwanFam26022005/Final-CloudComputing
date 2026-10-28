@@ -1,0 +1,20 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetBucketLocation"],
+      "Resource": ["arn:aws:s3:::demo", "arn:aws:s3:::profile-pics", "arn:aws:s3:::documents"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::documents"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject"],
+      "Resource": ["arn:aws:s3:::demo/index.html", "arn:aws:s3:::profile-pics/avatar.jpg", "arn:aws:s3:::documents/*"]
+    }
+  ]
+}
