@@ -1,0 +1,11 @@
+# Apply from the root with docker-compose.yml only after restoring the volume.
+# external:true prevents Compose from silently creating an empty data volume.
+services:
+  authentication-identity-server:
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+
+volumes:
+  keycloak_data:
+    external: true
+    name: n07-keycloak-data
