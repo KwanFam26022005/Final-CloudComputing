@@ -1,21 +1,604 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Blog 3 – Giám sát hạ tầng với Prometheus & Grafana</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 780px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1e293b; }
-    img { max-width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; margin: 16px 0; }
-    a { color: #2563eb; font-weight: 600; text-decoration: none; }
+    :root {
+      --sky: #e8eff5;
+      --paper: #f7fafc;
+      --ink: #0f2236;
+      --slate: #56708a;
+      --line: #b7c8d8;
+      --signal: #e8491d;
+
+      --sans: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 1.0625rem;
+      line-height: 1.7;
+      color: var(--ink);
+      background-color: var(--sky);
+      background-image:
+        linear-gradient(to right, rgba(183, 200, 216, .35) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(183, 200, 216, .35) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--ink);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: .92em;
+      background: rgba(15, 34, 54, .07);
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+
+    .wrap {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 22px 0 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .bar .mark {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+      text-decoration: none;
+    }
+
+    .bar nav {
+      display: flex;
+      gap: 26px;
+    }
+
+    .bar nav a {
+      text-decoration: none;
+      color: var(--slate);
+      font-size: .98rem;
+    }
+
+    .bar nav a:hover {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .bar nav a[aria-current="page"] {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .article {
+      display: grid;
+      grid-template-columns: 200px minmax(0, 1fr);
+      gap: 56px;
+      padding: 56px 0 72px;
+    }
+
+    .side {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      font-size: .95rem;
+    }
+
+    .side p {
+      margin: 0 0 4px;
+      color: var(--slate);
+    }
+
+    .side ol {
+      list-style: none;
+      margin: 0 0 28px;
+      padding: 0;
+      border-left: 2px solid var(--line);
+    }
+
+    .side li a {
+      display: block;
+      padding: 5px 0 5px 14px;
+      margin-left: -2px;
+      border-left: 2px solid transparent;
+      text-decoration: none;
+      color: var(--slate);
+    }
+
+    .side li a:hover {
+      color: var(--ink);
+      border-left-color: var(--ink);
+    }
+
+    .side .back {
+      display: block;
+      color: var(--ink);
+      text-underline-offset: 4px;
+      margin-bottom: 6px;
+    }
+
+    .side .toc-title {
+      margin-top: 24px;
+    }
+
+    h1 {
+      margin: 0 0 20px;
+      font-size: clamp(2.1rem, 4.6vw, 3.3rem);
+      font-weight: 700;
+      font-variation-settings: "wdth" 80;
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      overflow-wrap: anywhere;
+      max-width: 20ch;
+    }
+
+    .meta {
+      margin: 0 0 36px;
+      color: var(--slate);
+      font-size: .95rem;
+    }
+
+    .meta strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .prose {
+      max-width: 66ch;
+    }
+
+    .prose h2 {
+      margin: 48px 0 12px;
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      line-height: 1.2;
+      scroll-margin-top: 24px;
+    }
+
+    .prose p {
+      margin: 0 0 16px;
+    }
+
+    .prose ul {
+      margin: 0 0 16px;
+      padding-left: 1.2em;
+    }
+
+    .prose li {
+      margin-bottom: 6px;
+    }
+
+    .fig {
+      margin: 8px 0 0;
+    }
+
+    .fig-scroll {
+      overflow-x: auto;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px;
+    }
+
+    .fig svg {
+      display: block;
+      width: 100%;
+      min-width: 560px;
+      height: auto;
+    }
+
+    .fig figcaption {
+      margin-top: 12px;
+      font-size: .92rem;
+      color: var(--slate);
+      max-width: 64ch;
+    }
+
+    .fig .box {
+      fill: var(--paper);
+      stroke: var(--ink);
+      stroke-width: 1.5;
+    }
+
+    .fig .box.hot {
+      fill: var(--signal);
+    }
+
+    .fig text {
+      font-family: var(--mono);
+      fill: var(--ink);
+      font-size: 12.5px;
+    }
+
+    .fig .sub {
+      fill: var(--slate);
+      font-size: 11.5px;
+    }
+
+    .fig .note {
+      font-family: var(--sans);
+      font-size: 12.5px;
+      fill: var(--slate);
+    }
+
+    .fig .edge {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 1.5;
+    }
+
+    .fig .edge.alt {
+      stroke: var(--slate);
+      stroke-dasharray: 5 4;
+    }
+
+    .fig .zone {
+      fill: none;
+      stroke: var(--line);
+      stroke-width: 1.5;
+      stroke-dasharray: 6 5;
+    }
+
+    .fig .tip {
+      fill: var(--ink);
+    }
+
+    .code {
+      margin: 4px 0 20px;
+      padding: 14px 16px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--ink);
+      border-radius: 4px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: .9rem;
+      line-height: 1.55;
+      white-space: pre;
+    }
+
+    .tbl-wrap {
+      overflow-x: auto;
+      margin: 4px 0 20px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 440px;
+      font-size: .98rem;
+    }
+
+    caption {
+      text-align: left;
+      color: var(--slate);
+      font-size: .92rem;
+      padding-bottom: 8px;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 10px 14px 10px 0;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    thead th {
+      border-bottom: 2px solid var(--ink);
+      font-weight: 700;
+    }
+
+    tbody th {
+      font-weight: 600;
+      width: 26%;
+    }
+
+    .callout {
+      margin: 24px 0;
+      padding: 10px 0 10px 16px;
+      border-left: 3px solid var(--signal);
+    }
+
+    .callout p {
+      margin: 0;
+    }
+
+    .end {
+      margin-top: 56px;
+      padding-top: 22px;
+      border-top: 2px solid var(--ink);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+    }
+
+    .end a {
+      text-underline-offset: 4px;
+      font-weight: 600;
+    }
+
+    .end a:hover {
+      text-decoration-thickness: 2px;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 22px 0 40px;
+      color: var(--slate);
+      font-size: .92rem;
+    }
+
+    footer code {
+      background: none;
+      padding: 0;
+    }
+
+    @media (max-width: 900px) {
+      .article {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 28px;
+        padding: 36px 0 56px;
+      }
+
+      .side {
+        position: static;
+      }
+
+      .side ol {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 18px;
+        border-left: 0;
+        margin-bottom: 8px;
+      }
+
+      .side li a {
+        padding: 4px 0;
+        margin: 0;
+        border-left: 0;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+
+      .side p {
+        display: none;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .wrap {
+        padding: 0 16px;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <!-- TODO [Thành viên 1]: Có thể cập nhật thêm nội dung hoặc ảnh minh họa cá nhân -->
-  <h1>Bài viết 3: Giám sát Hạ tầng Cloud với Prometheus & Grafana</h1>
-  <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='720' height='220'><rect width='100%' height='100%' fill='%237c2d12'/><text x='50%' y='50%' fill='white' font-size='24' font-family='sans-serif' text-anchor='middle' dominant-baseline='middle'>Observability: Prometheus + Node Exporter + Grafana</text></svg>" alt="Monitoring Illustration" />
-  <p>Trong vận hành đám mây, việc theo dõi các chỉ số CPU, bộ nhớ RAM và băng thông mạng theo thời gian thực giúp phát hiện sớm các điểm nghẽn cổ chai.</p>
-  <p>Prometheus thu thập định kỳ (scrape) metrics từ <code>node-exporter</code> và <code>web-frontend-server</code> để hiển thị trực quan trên bảng điều khiển Grafana.</p>
-  <hr />
-  <p><a href="/blog/">← Quay lại danh sách Blog</a> | <a href="/">🏠 Quay lại Trang chính (Home)</a></p>
+  <div class="wrap">
+
+    <header class="bar">
+      <a class="mark" href="/">MyMiniCloud</a>
+      <nav aria-label="Điều hướng chính">
+        <a href="/">Trang chủ</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+      </nav>
+    </header>
+
+    <div class="article">
+
+      <aside class="side" aria-label="Mục lục">
+        <a class="back" href="/blog/">Quay lại danh sách blog</a>
+        <a class="back" href="/">Quay lại trang chính</a>
+        <p class="toc-title">Trong bài này</p>
+        <ol>
+          <li><a href="#why">Vì sao cần giám sát</a></li>
+          <li><a href="#pipeline">Đường đi của số liệu</a></li>
+          <li><a href="#scrape">Cấu hình thu thập</a></li>
+          <li><a href="#grafana">Bảng điều khiển Grafana</a></li>
+        </ol>
+      </aside>
+
+      <article>
+        <!-- TODO [Thành viên 1]: Có thể cập nhật thêm nội dung hoặc ảnh minh họa cá nhân -->
+        <h1>Bài viết 3: Giám sát hạ tầng cloud với Prometheus và Grafana</h1>
+        <p class="meta"><strong>Bài 3</strong> trong loạt 3 bài về MyMiniCloud</p>
+
+        <div class="prose">
+          <p>
+            Trong vận hành đám mây, việc theo dõi các chỉ số CPU, bộ nhớ RAM và băng thông mạng theo thời gian thực
+            giúp phát hiện sớm các điểm nghẽn cổ chai. Bài này cho thấy hai công cụ làm việc đó trong MyMiniCloud
+            và cách chúng nối với nhau.
+          </p>
+
+          <h2 id="why">Vì sao cần giám sát</h2>
+          <p>
+            Hệ thống có nhiều container thì khó biết cái nào đang quá tải nếu chỉ chờ người dùng báo lỗi.
+            Số liệu theo thời gian giúp trả lời ba câu hỏi:
+          </p>
+          <ul>
+            <li>Bây giờ máy nào đang dùng nhiều CPU và RAM nhất?</li>
+            <li>Mức dùng đang tăng dần hay chỉ tăng tạm thời?</li>
+            <li>Sau khi thêm một máy chủ web, tải có thật sự được chia đều không?</li>
+          </ul>
+
+          <h2 id="pipeline">Đường đi của số liệu</h2>
+          <p>
+            Hệ thống có ba mắt xích. <code>node-exporter</code> đọc chỉ số của máy chủ và đưa ra qua một trang web nhỏ.
+            Prometheus định kỳ ghé từng nơi để lấy về và lưu lại. Grafana không tự đo gì, nó chỉ hỏi Prometheus
+            rồi vẽ thành biểu đồ.
+          </p>
+        </div>
+
+        <figure class="fig">
+          <div class="fig-scroll">
+            <svg viewBox="0 0 640 280" role="img" aria-labelledby="f3-t f3-d">
+              <title id="f3-t">Đường đi của số liệu giám sát</title>
+              <desc id="f3-d">
+                Prometheus định kỳ kéo số liệu từ node-exporter và web-frontend-server. Grafana truy vấn Prometheus để
+                vẽ biểu đồ.
+              </desc>
+
+              <defs>
+                <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+                  orient="auto-start-reverse">
+                  <path d="M0 0 L10 5 L0 10 z" class="tip" />
+                </marker>
+              </defs>
+
+              <rect class="zone" x="10" y="14" width="620" height="252" rx="14" />
+              <text class="sub" x="28" y="38">cloud-net</text>
+
+              <!-- sources -->
+              <rect class="box" x="30" y="60" width="170" height="64" rx="6" />
+              <text x="42" y="86">node-exporter</text>
+              <text class="sub" x="42" y="104">CPU, RAM, mạng</text>
+
+              <rect class="box" x="30" y="156" width="170" height="64" rx="6" />
+              <text x="42" y="182">web-frontend-server</text>
+              <text class="sub" x="42" y="200">dịch vụ cần theo dõi</text>
+
+              <!-- prometheus -->
+              <rect class="box hot" x="255" y="108" width="140" height="64" rx="6" />
+              <text x="267" y="134">prometheus</text>
+              <text x="267" y="152" style="font-size:11.5px">lưu số liệu</text>
+
+              <!-- grafana -->
+              <rect class="box" x="450" y="108" width="160" height="64" rx="6" />
+              <text x="462" y="134">grafana</text>
+              <text class="sub" x="462" y="152">biểu đồ, bảng</text>
+
+              <!-- pull edges: arrow ends at the source -->
+              <path class="edge" d="M255 128 C230 128 230 92 202 92" marker-end="url(#arr)" />
+              <path class="edge" d="M255 152 C230 152 230 188 202 188" marker-end="url(#arr)" />
+              <!-- query edge: arrow ends at prometheus -->
+              <path class="edge alt" d="M450 140 H397" marker-end="url(#arr)" />
+
+              <text class="note" x="215" y="248">Prometheus chủ động lấy số liệu</text>
+              <text class="note" x="418" y="196">Grafana truy vấn</text>
+            </svg>
+          </div>
+          <figcaption>
+            Mũi tên chỉ hướng của yêu cầu. Prometheus (màu cam) là nơi duy nhất lưu số liệu, Grafana chỉ đọc từ đó.
+          </figcaption>
+        </figure>
+
+        <div class="prose">
+          <h2 id="scrape">Cấu hình thu thập</h2>
+          <p>
+            Prometheus thu thập định kỳ (scrape) metrics từ <code>node-exporter</code> và
+            <code>web-frontend-server</code>
+            để hiển thị trực quan trên bảng điều khiển Grafana. Danh sách nơi cần ghé thăm nằm trong
+            <code>prometheus.yml</code>. Ví dụ rút gọn:
+          </p>
+        </div>
+
+        <pre class="code" tabindex="0" aria-label="Ví dụ cấu hình Prometheus">global:
+  scrape_interval: 15s
+ 
+scrape_configs:
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]</pre>
+
+        <div class="prose">
+          <p>
+            Cứ mỗi 15 giây, Prometheus gọi đến <code>node-exporter:9100</code> và ghi lại các con số.
+            Muốn theo dõi thêm một dịch vụ, ta chỉ thêm một mục <code>job_name</code> mới.
+          </p>
+
+          <div class="tbl-wrap">
+            <table>
+              <caption>Các chỉ số thường xem đầu tiên</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Chỉ số</th>
+                  <th scope="col">Cho biết</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">CPU</th>
+                  <td>Máy đang bận đến mức nào</td>
+                </tr>
+                <tr>
+                  <th scope="row">RAM</th>
+                  <td>Bộ nhớ còn lại trước khi bị chậm</td>
+                </tr>
+                <tr>
+                  <th scope="row">Băng thông mạng</th>
+                  <td>Lượng dữ liệu vào và ra theo thời gian</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 id="grafana">Bảng điều khiển Grafana</h2>
+          <p>
+            Trong Grafana, ta khai báo Prometheus làm nguồn dữ liệu, rồi tạo biểu đồ từ các chỉ số ở trên.
+            Một bảng điều khiển tốt nên trả lời được câu hỏi "hệ thống có ổn không" chỉ bằng một cái nhìn.
+          </p>
+          <div class="callout">
+            <p>
+              Khi demo, chụp bảng điều khiển trước và sau khi gửi nhiều yêu cầu đến hệ thống.
+              Sự thay đổi của biểu đồ là bằng chứng rõ nhất cho báo cáo.
+            </p>
+          </div>
+        </div>
+
+        <nav class="end" aria-label="Điều hướng cuối bài">
+          <a href="/blog/blog2.html">← Bài trước: API Gateway và cân bằng tải</a>
+          <a href="/blog/">Quay lại danh sách blog</a>
+          <a href="/">Quay lại trang chính (Home)</a>
+        </nav>
+      </article>
+
+    </div>
+
+    <footer>
+      Trang tĩnh do Nginx phục vụ trong mạng <code>cloud-net</code>.
+    </footer>
+
+  </div>
 </body>
+
 </html>

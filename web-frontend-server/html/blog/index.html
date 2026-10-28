@@ -1,26 +1,370 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MyMiniCloud – Blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; max-width: 820px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1e293b; background: #f8fafc; }
-    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px; }
-    a { color: #2563eb; text-decoration: none; font-weight: 600; }
+    :root {
+      --sky: #e8eff5;
+      --paper: #f7fafc;
+      --ink: #0f2236;
+      --slate: #56708a;
+      --line: #b7c8d8;
+      --signal: #e8491d;
+
+      --sans: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 1.0625rem;
+      line-height: 1.65;
+      color: var(--ink);
+      background-color: var(--sky);
+      background-image:
+        linear-gradient(to right, rgba(183, 200, 216, .35) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(183, 200, 216, .35) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--ink);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: .92em;
+      background: rgba(15, 34, 54, .07);
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+
+    .wrap {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 22px 0 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .bar .mark {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+      text-decoration: none;
+    }
+
+    .bar nav {
+      display: flex;
+      gap: 26px;
+    }
+
+    .bar nav a {
+      text-decoration: none;
+      color: var(--slate);
+      font-size: .98rem;
+    }
+
+    .bar nav a:hover {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .bar nav a[aria-current="page"] {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    /* ---------- head ---------- */
+    .head {
+      display: grid;
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      gap: 56px;
+      align-items: end;
+      padding: 64px 0 48px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.5rem, 5.4vw, 4.1rem);
+      font-weight: 700;
+      font-variation-settings: "wdth" 80;
+      line-height: 1.02;
+      letter-spacing: -0.025em;
+      overflow-wrap: anywhere;
+    }
+
+    .intro {
+      margin: 0;
+      color: var(--slate);
+      font-size: 1.08rem;
+      max-width: 38ch;
+    }
+
+    .back {
+      display: inline-block;
+      margin-top: 14px;
+      color: var(--ink);
+      font-weight: 600;
+      text-underline-offset: 4px;
+    }
+
+    .back:hover {
+      text-decoration-thickness: 2px;
+    }
+
+    /* ---------- reading path: the posts build on each other, so they sit on one line ---------- */
+    .path-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 10px;
+      margin: 0;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+    }
+
+    .path-title span {
+      color: var(--slate);
+      font-size: .98rem;
+    }
+
+    .path {
+      list-style: none;
+      margin: 0;
+      padding: 0 0 24px;
+      position: relative;
+    }
+
+    .path::before {
+      content: "";
+      position: absolute;
+      left: 11px;
+      top: 40px;
+      bottom: 56px;
+      border-left: 2px solid var(--ink);
+    }
+
+    .path li {
+      position: relative;
+    }
+
+    .path a {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 4px 28px;
+      padding: 30px 0 26px;
+      text-decoration: none;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .path li:last-child a {
+      border-bottom: 0;
+    }
+
+    .dot {
+      grid-row: 1 / span 3;
+      width: 24px;
+      height: 24px;
+      margin-top: 4px;
+      border-radius: 50%;
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      position: relative;
+      z-index: 1;
+    }
+
+    .path a:hover .dot,
+    .path a:focus-visible .dot {
+      background: var(--signal);
+    }
+
+    .step {
+      color: var(--slate);
+      font-size: .95rem;
+    }
+
+    .t {
+      font-size: 1.55rem;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.015em;
+      max-width: 30ch;
+    }
+
+    .d {
+      color: var(--slate);
+      max-width: 56ch;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 8px;
+      margin-top: 8px;
+    }
+
+    .tags code {
+      background: var(--paper);
+      border: 1px solid var(--line);
+    }
+
+    .path a:hover .t {
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 5px;
+    }
+
+    footer {
+      margin-top: 32px;
+      border-top: 1px solid var(--line);
+      padding: 22px 0 40px;
+      color: var(--slate);
+      font-size: .92rem;
+    }
+
+    footer code {
+      background: none;
+      padding: 0;
+    }
+
+    @media (max-width: 880px) {
+      .head {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+        padding: 40px 0 36px;
+        align-items: start;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .wrap {
+        padding: 0 16px;
+      }
+
+      .path a {
+        gap: 4px 18px;
+      }
+
+      .t {
+        font-size: 1.3rem;
+      }
+    }
   </style>
 </head>
-<body>
-  <h1>MyMiniCloud – Blog</h1>
-  <p><a href="/">← Back to Home (Quay lại trang chính)</a></p>
 
-  <div class="card">
-    <h2>Danh mục bài viết (Mở rộng #1)</h2>
-    <ul>
-      <li><a href="/blog/blog1.html">Bài 1: Tổng quan Kiến trúc Điện toán Đám mây & Container hóa</a></li>
-      <li><a href="/blog/blog2.html">Bài 2: Tìm hiểu Microservices, API Gateway & Cân bằng tải Nginx</a></li>
-      <li><a href="/blog/blog3.html">Bài 3: Giám sát Hạ tầng Cloud với Prometheus & Grafana</a></li>
-    </ul>
+<body>
+  <div class="wrap">
+
+    <header class="bar">
+      <a class="mark" href="/">MyMiniCloud</a>
+      <nav aria-label="Điều hướng chính">
+        <a href="/">Trang chủ</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="head">
+        <h1>MyMiniCloud – Blog</h1>
+        <div>
+          <p class="intro">
+            Ba bài viết ghi lại cách hệ thống được dựng, từ container đến cửa vào và giám sát.
+            Đọc theo thứ tự sẽ dễ theo dõi nhất.
+          </p>
+          <a class="back" href="/">← Quay lại trang chính (Home)</a>
+        </div>
+      </section>
+
+      <section aria-labelledby="list-title">
+        <div class="path-title">
+          <h2 id="list-title">Danh mục bài viết</h2>
+          <span>3 bài</span>
+        </div>
+
+        <!-- TODO [Thành viên 1 - Mở rộng #1]: Tùy chỉnh tiêu đề và mô tả 3 bài viết blog cá nhân bên dưới -->
+        <ol class="path">
+          <li>
+            <a href="/blog/blog1.html">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="step">Bài 1</span>
+              <span class="t">Tổng quan kiến trúc điện toán đám mây và container hóa</span>
+              <span class="d">
+                Đám mây gồm những lớp nào, máy ảo khác container ra sao, và vì sao Docker đủ để dựng một bản thu nhỏ.
+                <span class="tags"><code>Docker</code><code>cloud-net</code><code>AWS EC2</code></span>
+              </span>
+            </a>
+          </li>
+          <li>
+            <a href="/blog/blog2.html">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="step">Bài 2</span>
+              <span class="t">Microservices, API Gateway và cân bằng tải với Nginx</span>
+              <span class="d">
+                Một cửa vào duy nhất định tuyến yêu cầu theo đường dẫn, rồi chia tải giữa hai máy chủ web bằng Round
+                Robin.
+                <span class="tags"><code>Nginx</code><code>API Gateway</code><code>Round Robin</code></span>
+              </span>
+            </a>
+          </li>
+          <li>
+            <a href="/blog/blog3.html">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="step">Bài 3</span>
+              <span class="t">Giám sát hạ tầng cloud với Prometheus và Grafana</span>
+              <span class="d">
+                Thu thập số liệu CPU, RAM, mạng từ các container và biến chúng thành bảng điều khiển dễ đọc.
+                <span class="tags"><code>Prometheus</code><code>node-exporter</code><code>Grafana</code></span>
+              </span>
+            </a>
+          </li>
+        </ol>
+      </section>
+    </main>
+
+    <footer>
+      Trang tĩnh do Nginx phục vụ trong mạng <code>cloud-net</code>.
+    </footer>
+
   </div>
 </body>
+
 </html>

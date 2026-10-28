@@ -1,21 +1,613 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Blog 1 – Kiến trúc Điện toán Đám mây</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 780px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1e293b; }
-    img { max-width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; margin: 16px 0; }
-    a { color: #2563eb; font-weight: 600; text-decoration: none; }
+    :root {
+      --sky: #e8eff5;
+      --paper: #f7fafc;
+      --ink: #0f2236;
+      --slate: #56708a;
+      --line: #b7c8d8;
+      --signal: #e8491d;
+
+      --sans: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 1.0625rem;
+      line-height: 1.7;
+      color: var(--ink);
+      background-color: var(--sky);
+      background-image:
+        linear-gradient(to right, rgba(183, 200, 216, .35) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(183, 200, 216, .35) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--ink);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: .92em;
+      background: rgba(15, 34, 54, .07);
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+
+    .wrap {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ---------- top bar ---------- */
+    .bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 22px 0 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .bar .mark {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+      text-decoration: none;
+    }
+
+    .bar nav {
+      display: flex;
+      gap: 26px;
+    }
+
+    .bar nav a {
+      text-decoration: none;
+      color: var(--slate);
+      font-size: .98rem;
+    }
+
+    .bar nav a:hover {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .bar nav a[aria-current="page"] {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    /* ---------- article layout ---------- */
+    .article {
+      display: grid;
+      grid-template-columns: 200px minmax(0, 1fr);
+      gap: 56px;
+      padding: 56px 0 72px;
+    }
+
+    .side {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      font-size: .95rem;
+    }
+
+    .side p {
+      margin: 0 0 4px;
+      color: var(--slate);
+    }
+
+    .side ol {
+      list-style: none;
+      margin: 0 0 28px;
+      padding: 0;
+      border-left: 2px solid var(--line);
+    }
+
+    .side li a {
+      display: block;
+      padding: 5px 0 5px 14px;
+      margin-left: -2px;
+      border-left: 2px solid transparent;
+      text-decoration: none;
+      color: var(--slate);
+    }
+
+    .side li a:hover {
+      color: var(--ink);
+      border-left-color: var(--ink);
+    }
+
+    .side .back {
+      display: block;
+      color: var(--ink);
+      text-underline-offset: 4px;
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      margin: 0 0 20px;
+      font-size: clamp(2.1rem, 4.6vw, 3.3rem);
+      font-weight: 700;
+      font-variation-settings: "wdth" 80;
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      overflow-wrap: anywhere;
+      max-width: 20ch;
+    }
+
+    .meta {
+      margin: 0 0 36px;
+      color: var(--slate);
+      font-size: .95rem;
+    }
+
+    .meta strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .prose {
+      max-width: 66ch;
+    }
+
+    .prose h2 {
+      margin: 48px 0 12px;
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      line-height: 1.2;
+      scroll-margin-top: 24px;
+    }
+
+    .prose p {
+      margin: 0 0 16px;
+    }
+
+    .prose ul {
+      margin: 0 0 16px;
+      padding-left: 1.2em;
+    }
+
+    .prose li {
+      margin-bottom: 6px;
+    }
+
+    /* ---------- figure (the one memorable thing: VM vs container stack) ---------- */
+    .fig {
+      margin: 8px 0 0;
+    }
+
+    .fig-scroll {
+      overflow-x: auto;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px;
+    }
+
+    .fig svg {
+      display: block;
+      width: 100%;
+      min-width: 560px;
+      height: auto;
+    }
+
+    .fig figcaption {
+      margin-top: 12px;
+      font-size: .92rem;
+      color: var(--slate);
+      max-width: 64ch;
+    }
+
+    .fig .box {
+      fill: var(--paper);
+      stroke: var(--ink);
+      stroke-width: 1.5;
+    }
+
+    .fig .box.dim {
+      stroke: var(--slate);
+      fill: transparent;
+      stroke-dasharray: 3 3;
+      stroke-width: 1;
+    }
+
+    .fig .box.hot {
+      fill: var(--signal);
+    }
+
+    .fig text {
+      font-family: var(--mono);
+      fill: var(--ink);
+      font-size: 12.5px;
+    }
+
+    .fig .sub {
+      fill: var(--slate);
+      font-size: 11.5px;
+    }
+
+    .fig .hot-t {
+      fill: var(--ink);
+      font-weight: 500;
+    }
+
+    .fig .head {
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .fig .note {
+      font-family: var(--sans);
+      font-size: 12.5px;
+      fill: var(--slate);
+    }
+
+    /* ---------- compare table ---------- */
+    .tbl-wrap {
+      overflow-x: auto;
+      margin: 4px 0 20px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 440px;
+      font-size: .98rem;
+    }
+
+    caption {
+      text-align: left;
+      color: var(--slate);
+      font-size: .92rem;
+      padding-bottom: 8px;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 10px 14px 10px 0;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    thead th {
+      border-bottom: 2px solid var(--ink);
+      font-weight: 700;
+    }
+
+    tbody th {
+      font-weight: 600;
+      width: 26%;
+    }
+
+    /* ---------- note ---------- */
+    .callout {
+      margin: 24px 0;
+      padding: 10px 0 10px 16px;
+      border-left: 3px solid var(--signal);
+    }
+
+    .callout p {
+      margin: 0;
+    }
+
+    /* ---------- bottom nav ---------- */
+    .end {
+      margin-top: 56px;
+      padding-top: 22px;
+      border-top: 2px solid var(--ink);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+    }
+
+    .end a {
+      text-underline-offset: 4px;
+      font-weight: 600;
+    }
+
+    .end a:hover {
+      text-decoration-thickness: 2px;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 22px 0 40px;
+      color: var(--slate);
+      font-size: .92rem;
+    }
+
+    footer code {
+      background: none;
+      padding: 0;
+    }
+
+    /* ---------- responsive ---------- */
+    @media (max-width: 900px) {
+      .article {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 28px;
+        padding: 36px 0 56px;
+      }
+
+      .side {
+        position: static;
+      }
+
+      .side ol {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 18px;
+        border-left: 0;
+        margin-bottom: 8px;
+      }
+
+      .side li a {
+        padding: 4px 0;
+        margin: 0;
+        border-left: 0;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+
+      .side p {
+        display: none;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .wrap {
+        padding: 0 16px;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <!-- TODO [Thành viên 1]: Có thể cập nhật thêm nội dung hoặc ảnh minh họa cá nhân -->
-  <h1>Bài viết 1: Tổng quan Kiến trúc Điện toán Đám mây & Container hóa</h1>
-  <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='720' height='220'><rect width='100%' height='100%' fill='%231e3a8a'/><text x='50%' y='50%' fill='white' font-size='24' font-family='sans-serif' text-anchor='middle' dominant-baseline='middle'>Cloud Architecture &amp; Docker Containers</text></svg>" alt="Cloud Architecture Illustration" />
-  <p>Điện toán đám mây (Cloud Computing) kết hợp với công nghệ Docker Container giúp chuẩn hóa môi trường triển khai từ máy cá nhân (Local) lên hạ tầng đám mây công cộng như AWS EC2.</p>
-  <p>Trong hệ thống <strong>MyMiniCloud</strong>, mỗi máy chủ đảm nhận một vai trò độc lập và giao tiếp qua mạng ảo nội bộ <code>cloud-net</code>.</p>
-  <hr />
-  <p><a href="/blog/">← Quay lại danh sách Blog</a> | <a href="/">🏠 Quay lại Trang chính (Home)</a></p>
+  <div class="wrap">
+
+    <header class="bar">
+      <a class="mark" href="/">MyMiniCloud</a>
+      <nav aria-label="Điều hướng chính">
+        <a href="/">Trang chủ</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+      </nav>
+    </header>
+
+    <div class="article">
+
+      <aside class="side" aria-label="Mục lục">
+        <a class="back" href="/blog/">Quay lại danh sách blog</a>
+        <a class="back" href="/">Quay lại trang chính</a>
+        <p style="margin-top:24px">Trong bài này</p>
+        <ol>
+          <li><a href="#cloud">Đám mây là gì</a></li>
+          <li><a href="#vm-container">Máy ảo và container</a></li>
+          <li><a href="#docker">Docker trong MyMiniCloud</a></li>
+          <li><a href="#aws">Từ máy cá nhân lên AWS EC2</a></li>
+        </ol>
+      </aside>
+
+      <article>
+        <!-- TODO [Thành viên 1]: Có thể cập nhật thêm nội dung hoặc ảnh minh họa cá nhân -->
+        <h1>Bài viết 1: Tổng quan kiến trúc điện toán đám mây và container hóa</h1>
+        <p class="meta"><strong>Bài 1</strong> trong loạt 3 bài về MyMiniCloud</p>
+
+        <div class="prose">
+          <p>
+            Điện toán đám mây (Cloud Computing) kết hợp với công nghệ Docker Container giúp chuẩn hóa môi trường
+            triển khai từ máy cá nhân (Local) lên hạ tầng đám mây công cộng như AWS EC2.
+            Bài này giải thích hai ý đó, và cách MyMiniCloud áp dụng chúng.
+          </p>
+
+          <h2 id="cloud">Đám mây là gì</h2>
+          <p>
+            Thay vì tự mua và đặt máy chủ, bạn thuê tài nguyên tính toán, lưu trữ và mạng từ nhà cung cấp,
+            dùng bao nhiêu trả bấy nhiêu. Nền tảng cloud thường chia thành ba lớp dịch vụ:
+          </p>
+          <ul>
+            <li><strong>IaaS</strong>: thuê máy ảo, ổ đĩa và mạng (ví dụ AWS EC2).</li>
+            <li><strong>PaaS</strong>: thuê nền tảng để chạy ứng dụng, không quản lý hệ điều hành.</li>
+            <li><strong>SaaS</strong>: dùng thẳng phần mềm hoàn chỉnh qua trình duyệt.</li>
+          </ul>
+          <p>
+            MyMiniCloud nằm ở mức IaaS thu nhỏ: ta tự dựng các thành phần mà nhà cung cấp cloud thường làm sẵn,
+            như máy chủ web, cơ sở dữ liệu, lưu trữ đối tượng, xác thực và giám sát.
+          </p>
+        </div>
+
+        <div class="prose">
+          <h2 id="vm-container">Máy ảo và container</h2>
+          <p>
+            Cả hai đều cho phép chạy nhiều ứng dụng tách biệt trên một máy vật lý, nhưng khác nhau ở chỗ
+            chia sẻ gì. Máy ảo mang theo cả hệ điều hành riêng. Container dùng chung nhân của máy chủ,
+            nên nhẹ hơn và khởi động nhanh hơn.
+          </p>
+        </div>
+
+        <figure class="fig">
+          <div class="fig-scroll">
+            <svg viewBox="0 0 640 330" role="img" aria-labelledby="f1-t f1-d">
+              <title id="f1-t">So sánh máy ảo và container</title>
+              <desc id="f1-d">
+                Bên trái: máy ảo, mỗi ứng dụng có hệ điều hành khách riêng chạy trên hypervisor. Bên phải: container,
+                các ứng dụng chạy trực tiếp trên Docker Engine và dùng chung nhân hệ điều hành của máy chủ. Cả hai đều
+                nằm trên phần cứng.
+              </desc>
+
+              <!-- VM stack -->
+              <text class="head" x="20" y="24">Máy ảo</text>
+              <rect class="box" x="20" y="40" width="130" height="44" rx="4" />
+              <text x="32" y="60">ứng dụng A</text>
+              <text class="sub" x="32" y="76">thư viện</text>
+              <rect class="box" x="160" y="40" width="130" height="44" rx="4" />
+              <text x="172" y="60">ứng dụng B</text>
+              <text class="sub" x="172" y="76">thư viện</text>
+
+              <rect class="box" x="20" y="92" width="130" height="44" rx="4" />
+              <text x="32" y="112">HĐH khách</text>
+              <text class="sub" x="32" y="128">đầy đủ</text>
+              <rect class="box" x="160" y="92" width="130" height="44" rx="4" />
+              <text x="172" y="112">HĐH khách</text>
+              <text class="sub" x="172" y="128">đầy đủ</text>
+
+              <rect class="box" x="20" y="144" width="270" height="40" rx="4" />
+              <text x="32" y="169">hypervisor</text>
+              <rect class="box dim" x="20" y="192" width="270" height="40" rx="4" />
+              <text class="sub" x="32" y="217">phần cứng</text>
+
+              <!-- Container stack -->
+              <text class="head" x="350" y="24">Container</text>
+              <rect class="box hot" x="350" y="40" width="130" height="44" rx="4" />
+              <text class="hot-t" x="362" y="60">ứng dụng A</text>
+              <text class="hot-t" x="362" y="76" style="font-size:11.5px">thư viện</text>
+              <rect class="box hot" x="490" y="40" width="130" height="44" rx="4" />
+              <text class="hot-t" x="502" y="60">ứng dụng B</text>
+              <text class="hot-t" x="502" y="76" style="font-size:11.5px">thư viện</text>
+
+              <rect class="box" x="350" y="92" width="270" height="44" rx="4" />
+              <text x="362" y="112">Docker Engine</text>
+              <text class="sub" x="362" y="128">tách tiến trình, mạng, hệ thống tệp</text>
+              <rect class="box" x="350" y="144" width="270" height="40" rx="4" />
+              <text x="362" y="169">HĐH máy chủ (dùng chung nhân)</text>
+              <rect class="box dim" x="350" y="192" width="270" height="40" rx="4" />
+              <text class="sub" x="362" y="217">phần cứng</text>
+
+              <text class="note" x="20" y="268">Mỗi máy ảo chứa một hệ điều hành đầy đủ,</text>
+              <text class="note" x="20" y="286">nên nặng và khởi động chậm hơn.</text>
+              <text class="note" x="350" y="268">Container chỉ đóng gói ứng dụng và thư viện,</text>
+              <text class="note" x="350" y="286">nên nhẹ và khởi động trong vài giây.</text>
+            </svg>
+          </div>
+          <figcaption>
+            Hai cách tách biệt ứng dụng trên cùng một máy chủ. Phần màu cam là thứ MyMiniCloud dùng.
+          </figcaption>
+        </figure>
+
+        <div class="prose">
+          <div class="tbl-wrap" style="margin-top:28px">
+            <table>
+              <caption>Máy ảo và container, so theo bốn tiêu chí chính</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Tiêu chí</th>
+                  <th scope="col">Máy ảo</th>
+                  <th scope="col">Container</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Hệ điều hành</th>
+                  <td>Mỗi máy một hệ điều hành riêng</td>
+                  <td>Dùng chung nhân với máy chủ</td>
+                </tr>
+                <tr>
+                  <th scope="row">Kích thước</th>
+                  <td>Thường vài GB</td>
+                  <td>Thường vài chục đến vài trăm MB</td>
+                </tr>
+                <tr>
+                  <th scope="row">Khởi động</th>
+                  <td>Vài chục giây đến vài phút</td>
+                  <td>Vài giây</td>
+                </tr>
+                <tr>
+                  <th scope="row">Mức cô lập</th>
+                  <td>Cao, tách hẳn nhân</td>
+                  <td>Thấp hơn, chung nhân</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 id="docker">Docker trong MyMiniCloud</h2>
+          <p>
+            Trong hệ thống <strong>MyMiniCloud</strong>, mỗi máy chủ đảm nhận một vai trò độc lập và giao tiếp qua
+            mạng ảo nội bộ <code>cloud-net</code>. Mỗi vai trò là một container riêng:
+          </p>
+          <ul>
+            <li><code>web-frontend-server</code> phục vụ trang tĩnh và blog bằng Nginx.</li>
+            <li><code>app-backend</code> chạy API Flask, đọc ghi dữ liệu ở MariaDB và MinIO.</li>
+            <li><code>keycloak</code> lo xác thực, <code>api-gateway</code> là cửa vào duy nhất.</li>
+            <li>Prometheus và Grafana theo dõi sức khỏe của cả hệ thống.</li>
+          </ul>
+          <p>
+            Các container nằm chung một mạng nên gọi nhau bằng tên, ví dụ <code>web-frontend-server:80</code>,
+            không cần nhớ địa chỉ IP. Muốn thay một thành phần, ta dừng và dựng lại đúng container đó,
+            các phần còn lại giữ nguyên.
+          </p>
+
+          <div class="callout">
+            <p>
+              Một image là bản đóng gói bất biến. Chạy cùng một image ở đâu cũng cho ra cùng một môi trường,
+              nên câu "chạy được trên máy em mà" gần như biến mất.
+            </p>
+          </div>
+
+          <h2 id="aws">Từ máy cá nhân lên AWS EC2</h2>
+          <p>
+            Vì mọi thứ đã nằm trong image, việc đưa hệ thống lên đám mây công cộng gồm vài bước ngắn:
+          </p>
+          <ul>
+            <li>Đẩy image tùy chỉnh lên Docker Hub.</li>
+            <li>Tạo một máy EC2, cài Docker.</li>
+            <li>Kéo image về và khởi chạy bằng cùng tệp <code>docker-compose.yml</code> đã dùng ở máy cá nhân.</li>
+          </ul>
+          <p>
+            Kết quả là môi trường trên EC2 giống hệt môi trường lúc phát triển. Đó là lý do container hóa
+            được xem là nền tảng của triển khai hiện đại.
+          </p>
+        </div>
+
+        <nav class="end" aria-label="Điều hướng cuối bài">
+          <a href="/blog/">← Quay lại danh sách blog</a>
+          <a href="/">Quay lại trang chính (Home)</a>
+          <a href="/blog/blog2.html">Bài tiếp theo: Microservices và cân bằng tải →</a>
+        </nav>
+      </article>
+
+    </div>
+
+    <footer>
+      Trang tĩnh do Nginx phục vụ trong mạng <code>cloud-net</code>.
+    </footer>
+
+  </div>
 </body>
+
 </html>
