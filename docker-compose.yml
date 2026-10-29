@@ -16,10 +16,10 @@ services:
   web-frontend-server:
     build:
       context: ./web-frontend-server
-      args:
-        SERVER_NODE_NAME: "web-frontend-server1 (Primary)"
     image: ${DOCKERHUB_USERNAME:-kwanfam}/myminicloud-web:${PROJECT_TAG:-dev}
     container_name: web-frontend-server
+    environment:
+      SERVER_NODE_NAME: "web-frontend-server1 (Primary)"
     ports:
       - "${WEB_PORT:-8080}:80"
     networks:
@@ -37,10 +37,10 @@ services:
   web-frontend-server2:
     build:
       context: ./web-frontend-server
-      args:
-        SERVER_NODE_NAME: "web-frontend-server2 (Replica)"
     image: ${DOCKERHUB_USERNAME:-kwanfam}/myminicloud-web:${PROJECT_TAG:-dev}
     container_name: web-frontend-server2
+    environment:
+      SERVER_NODE_NAME: "web-frontend-server2 (Replica)"
     ports:
       - "${WEB2_PORT:-8082}:80"
     networks:
@@ -106,7 +106,7 @@ services:
   authentication-identity-server:
     image: quay.io/keycloak/keycloak:latest
     container_name: authentication-identity-server
-    command: ["start-dev", "--import-realm"]
+    command: [ "start-dev", "--import-realm" ]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: "${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}"
       KC_BOOTSTRAP_ADMIN_PASSWORD: "${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin}"
@@ -131,7 +131,7 @@ services:
   object-storage-server:
     image: minio/minio:latest
     container_name: object-storage-server
-    command: ["server", "/data", "--console-address", ":9001"]
+    command: [ "server", "/data", "--console-address", ":9001" ]
     environment:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-minioadmin}"
