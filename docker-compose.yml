@@ -9,6 +9,9 @@ networks:
     name: cloud-net
     driver: bridge
 
+volumes:
+  grafana-data:
+
 services:
   # ---------------------------------------------------------------------------
   # 1. WEB FRONTEND SERVER (Nginx Static Hosting & Blog) - [Thành viên 1]
@@ -173,7 +176,7 @@ services:
   # 7A. MONITORING NODE EXPORTER (Host/Container Metrics) - [Thành viên 4]
   # ---------------------------------------------------------------------------
   monitoring-node-exporter-server:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.12.1
     container_name: monitoring-node-exporter-server
     ports:
       - "${NODE_EXPORTER_PORT:-9100}:9100"
@@ -187,7 +190,7 @@ services:
   # 7B. MONITORING PROMETHEUS SERVER (Metrics Collector) - [Thành viên 4]
   # ---------------------------------------------------------------------------
   monitoring-prometheus-server:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.15.1
     container_name: monitoring-prometheus-server
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
@@ -206,7 +209,7 @@ services:
   # 8. MONITORING GRAFANA DASHBOARD SERVER (Visualization) - [Thành viên 4]
   # ---------------------------------------------------------------------------
   monitoring-grafana-dashboard-server:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.3.0
     container_name: monitoring-grafana-dashboard-server
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
@@ -215,6 +218,8 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: "${GF_SECURITY_ADMIN_PASSWORD:-admin}"
     volumes:
       - ./monitoring-grafana-dashboard-server/provisioning:/etc/grafana/provisioning:ro
+      # Lưu database của Grafana (dashboard import/sửa trên UI) để không mất khi tạo lại container
+      - grafana-data:/var/lib/grafana
     depends_on:
       - monitoring-prometheus-server
     networks:
