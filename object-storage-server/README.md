@@ -20,6 +20,200 @@ Mô phỏng dịch vụ lưu trữ đối tượng phi cấu trúc chuẩn S3 (t
    - Tạo bucket tên **`demo`**.
    - Upload file `web-frontend-server/html/index.html` vào bucket `demo`.
 2. **Phần Mở rộng (#5 - 0.5 điểm):**
-   - Tạo bucket tên **`profile-pics`**, vào phần **Manage → Access Policy** chuyển thành **`Public`**.
+   - Tạo bucket tên **`profile-pics`**; cấp quyền public đọc đúng object `avatar.jpg`
+     bằng công cụ ở mục 5, không cần công khai cả bucket.
    - Upload ảnh đại diện **`avatar.jpg`** và mở đường dẫn public trực tiếp trên trình duyệt: `http://localhost:9000/profile-pics/avatar.jpg`.
    - Tạo thêm bucket tên **`documents`** và upload file **PDF báo cáo** của nhóm.
+
+## 4. Chạy local khi không tải được image MinIO cũ
+
+Ngày 27/10/2026, chạy image `minio/minio:latest` trong Compose chung bị
+`pull access denied`; kiểm tra manifest bản
+`quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z` cũng trả 401.
+Chưa có căn cứ yêu cầu người dùng đăng nhập registry để xử lý lỗi này.
+
+Module cung cấp Dockerfile build từ **mã nguồn MinIO chính thức**, cố định release
+`RELEASE.2025-10-15T17-29-55Z`, cùng file Compose bổ sung chỉ áp dụng cho Storage.
+Các image Go và Alpine được ghim digest multi-platform, có Linux ARM64 và AMD64.
+Không cần cài Go trên máy host; nguồn được tải và biên dịch trong build stage.
+`.dockerignore` loại dữ liệu runtime khỏi build context.
+
+Nguồn tham khảo: [release và hướng dẫn build chính thức](https://github.com/minio/minio/releases/tag/RELEASE.2025-10-15T17-29-55Z).
+Đây là cách chuẩn bị image cho lab, không phải yêu cầu riêng của giảng viên.
+
+Chạy từ thư mục gốc dự án, thực hiện từng bước và kiểm tra kết quả:
+
+```bash
+# 1. Build image local; lần đầu cần tải Go modules và có thể mất vài phút.
+docker compose -f docker-compose.yml -f object-storage-server/compose.source.yml build object-storage-server
+
+# 2. Sau khi build thành công, chạy riêng Storage và xem trạng thái.
+docker compose -f docker-compose.yml -f object-storage-server/compose.source.yml up -d --no-deps object-storage-server
+docker compose -f docker-compose.yml -f object-storage-server/compose.source.yml ps object-storage-server
+```
+
+Luôn dùng cả hai file khi quản lý Storage theo cấu hình này. Compose gốc vẫn trỏ
+image cũ; không dùng lại lệnh `up` chỉ với Compose gốc cho service này.
+Network `cloud-net`, cổng 9000/9001, biến môi trường và mount dữ liệu được kế thừa.
+Không sửa Compose chung, không push image hoặc thay đổi module khác.
+Image thực tế và chức năng Storage chỉ được xác nhận sau khi build/run và kiểm tra
+thành công; file cấu hình hợp lệ chưa đủ để nghiệm thu runtime.
+
+## 5. Cấp quyền đọc công khai avatar bằng SDK chính thức
+
+Chuẩn bị sau khi đã upload ảnh JPEG thật tên `profile-pics/avatar.jpg`:
+
+```bash
+python3 -m venv object-storage-server/.venv
+object-storage-server/.venv/bin/python -m pip install -r object-storage-server/requirements-client.txt
+object-storage-server/.venv/bin/python object-storage-server/set_avatar_public.py --apply
+```
+
+Script dùng MinIO Python SDK, đọc credential từ cấu hình Compose local mà không
+in hoặc lưu credential ra file. Nó kiểm tra ảnh trước khi thêm policy cho phép
+anonymous `s3:GetObject` đúng object `profile-pics/avatar.jpg`, giữ các statement
+policy khác và không đổi bucket khác. Sau khi apply, script kiểm tra HTTP GET
+không đăng nhập: 200, `image/jpeg`, nội dung bằng object đọc có xác thực.
+Policy đã được ghi trước bước HTTP kiểm tra; nếu bước sau lỗi, cần kiểm tra lại
+policy hiện có thay vì giả định chưa có thay đổi.
+
+Bỏ `--apply` để xem grant đề xuất mà không đổi policy. `.venv/` được Git ignore.
+Việc kiểm tra SDK/ảnh/public URL chỉ được xác nhận đạt khi lệnh chạy thành công.
+Nguồn API: [ví dụ set_bucket_policy của SDK chính thức](https://github.com/minio/minio-py/blob/master/examples/set_bucket_policy.py).
+
+## 6. Cải tiến tự chọn: tải PDF riêng tư bằng link có thời hạn
+
+Đây là tiện ích phát triển từ Storage GV-MR05, không phải mục điểm mới của đề.
+Không sửa App, Compose, object hoặc bucket policy. Cần Docker Desktop đang chạy,
+MinIO local đã khởi động và môi trường Python ở mục 5 đã cài dependencies.
+
+```bash
+object-storage-server/.venv/bin/python object-storage-server/share_document.py 'N07_CLoud-Quy-Uoc-Trien-Khai-Nhom-v1.2.pdf' --minutes 1 --show-url
+```
+
+Thay tên PDF bằng object thực tế nếu khác. Script yêu cầu unsigned GET=403,
+signed GET=200 và bytes khớp, link sửa chữ ký=403; thất bại trả exit code 1.
+Mặc định link có hiệu lực 5 phút; demo cho phép 1–60 phút. `--show-url` chỉ in link
+khi muốn thử trình duyệt. Người có link có thể tải tệp trong thời hạn: không ghi
+link vào nhật ký, ảnh minh chứng hoặc Git. Script không lưu link/credential.
+
+Kiểm tra hết hạn thực tế riêng: mở link vừa tạo trong cửa sổ ẩn danh, sau hơn
+một phút gửi GET mới bằng link cũ (tránh dùng bản đã cache); mong đợi 403.
+Script chưa tự nghiệm thu thời điểm hết hạn. URL localhost chỉ dùng trên máy này;
+chưa tích hợp App/EC2. Công cụ mặc định dùng credential Compose local cho demo;
+mục 8 hướng dẫn chuyển sang tài khoản chỉ đọc bằng biến môi trường.
+
+## 7. Kiểm tra Storage bằng một lệnh (chỉ đọc)
+
+```bash
+object-storage-server/.venv/bin/python object-storage-server/verify_storage.py --pdf 'N07_CLoud-Quy-Uoc-Trien-Khai-Nhom-v1.2.pdf'
+```
+
+Công cụ đối chiếu demo/index.html với source Web local (không sửa Web), kiểm tra
+avatar có JPEG bytes/metadata, anonymous GET200 và nội dung khớp; gọi lại tiện ích
+share_document.py không in URL để kiểm tra PDF thật, unsigned403, signed200/bytes
+khớp và chữ ký sửa bị từ chối403. Tên PDF được truyền rõ qua --pdf.
+Kết quả cuối RESULT: PASS; 0 failed group(s) trả exit0; lỗi trả exit1.
+Nếu source Web đổi sau lần upload, kiểm tra demo sẽ báo khác phiên bản để đối chiếu.
+Không thay object/policy, không lưu credential/link. Không kiểm tra tự động thời gian
+hết hạn, UI Console, nội dung báo cáo thật hoặc EC2; kết quả trước đây không thay
+cho lần chạy sau khi cấu hình đổi. Căn cứ GV-07 và GV-MR05; tự động hóa là cải tiến
+tự chọn, không phải mục điểm bổ sung.
+
+### Kiểm tra tất cả PDF trong documents
+
+```bash
+object-storage-server/.venv/bin/python object-storage-server/verify_storage.py --all-pdfs
+```
+
+Chọn một trong --pdf hoặc --all-pdfs. Chế độ tất cả liệt kê object hiện tại có đuôi
+.pdf (không phân biệt hoa/thường), gồm đường dẫn con, và kiểm tra lần lượt từng
+file bằng cùng phép thử PDF/private/signed/tampered. File lỗi không dừng việc kiểm
+tra file kế tiếp; kết quả PDF SUMMARY chỉ rõ số file đạt/tổng và RESULT thất bại
+nếu có bất kỳ nhóm lỗi. Bucket không có PDF hoặc không liệt kê được cũng báo lỗi,
+không báo đạt khi chưa kiểm tra file nào. Không kiểm tra version cũ hoặc các file
+không có đuôi .pdf. Danh sách là tại thời điểm liệt kê, không khóa bucket khi chạy;
+nên chạy lúc không có thao tác ghi/xóa đồng thời. Demo và avatar vẫn được kiểm tra
+một lần. Link được tạo riêng từng PDF, không in/lưu và không chờ hết hạn.
+
+## 8. Cải tiến tự chọn: tài khoản kiểm thử quyền đọc tối thiểu
+
+Policy policies/storage-verifier-readonly.json chỉ cho GetBucketLocation trên3bucket,
+ListBucket trên documents và GetObject cho demo/index.html, profile-pics/avatar.jpg,
+mọi object trong documents. Không cấp quyền ghi/xóa/admin. Đây là phát triển từ GV-MR05, không phải
+mục điểm riêng, chưa phải tích hợp userKeycloak/IAMAWS/App.
+
+```bash
+# Xem chính sách, không gọi API hoặc thay đổi server:
+object-storage-server/.venv/bin/python object-storage-server/create_readonly_user.py
+# Tạo riêng tài khoản/policy mới, nhập secret ẩn hai lần:
+object-storage-server/.venv/bin/python object-storage-server/create_readonly_user.py --apply
+```
+
+Tên user n07-storage-verifier và policy n07-storage-verifier-readonly. Script dùng
+credential quản trị Compose riêng cho việc tạo user. Từ chối ghi đè user/policy đã
+có; tạo policy/user/attach không transactional: nếu lỗi, giữ nguyên phần đã tạo để
+kiểm tra, không tự xóa hoặc chạy đi chạy lại. Không đổi bucket policy/tài khoản cũ.
+Secret tự chọn ít nhất16ký tự, không in/lưu; người dùng phải giữ bằng cách an toàn.
+Nếu mất secret, cần quy trình đổi có chủ đích, không xóa dữ liệu hoặc tài khoản khác.
+
+Công cụ share_document.py và verify_storage.py hỗ trợ N07_MINIO_ACCESS_KEY và
+N07_MINIO_SECRET_KEY trong môi trường (cả hai phải có và khôngrỗng). Khi có biến sẽ
+chỉ dùng tài khoản này, không fallback quản trị nếu thông tin sai. Không cần Docker
+Compose để lấy credential khi đã cung cấp cả hai. Khi không đặt biến, giữ cách chạy
+lab cũ bằng credential Compose; đây là tương thích cũ, không phải ép dùng quyền tối
+thiểu mặc định. Không ghi secret vào lệnh/shellhistory/.env chung/Git.
+
+Ví dụ zsh sau khi tạo tài khoản thành công:
+
+```zsh
+export N07_MINIO_ACCESS_KEY=n07-storage-verifier
+read -rs 'N07_MINIO_SECRET_KEY?Nhập secret tài khoản kiểm thử: '
+echo
+export N07_MINIO_SECRET_KEY
+object-storage-server/.venv/bin/python object-storage-server/verify_storage.py --all-pdfs
+unset N07_MINIO_ACCESS_KEY N07_MINIO_SECRET_KEY
+```
+
+Chưa kết luận quyền thực tế chỉ từ policy: cần kiểm tra đọc/list/link ký thành công
+và các thao tác ghi/xóa/admin bị từ chối bằng đối tượng thử an toàn ở bước tiếp.
+Script set_avatar_public.py vẫn là tác vụ quản trị riêng, không dùng tài khoản đọc.
+Nguồn SDKAdmin: https://github.com/minio/minio-py/blob/7.2.20/minio/minioadmin.py .
+
+### Kiểm thử quyền bị từ chối bằng tệp tạm
+
+Sau khi tài khoản đọc chạy verify_storage.py đạt, đặt hai biến môi trường như trên,
+sau đó chạy verify_readonly.py thay cho verify_storage.py, echo $? ngay sau và unset
+credential. Không cần đổi user/policy. Công cụ yêu cầu đúng user n07-storage-verifier;
+không có credential sẽ trả exit1 trước mọi API call.
+
+```zsh
+object-storage-server/.venv/bin/python object-storage-server/verify_readonly.py
+echo "Exit code: $?"
+```
+
+Công cụ dùng admin Compose để tạo một fixture văn bản không bí mật dưới prefix
+n07-permission-test/<UUID> trong documents. Dùng verifier để đọc fixture, thử upload
+key khác, xóa fixture và gọi admin user_list; mong đợi đọc được, ba phép thử bị từ
+chối403. So sánh policy documents trước/sau. Trong finally dùng root xóa đúng hai
+key UUID, kể cả khi ghi bằng verifier bất ngờ thành công; không xóa PDF hiện hữu.
+Nếu cleanup lỗi do mạng/server, kiểm tra đúng prefix được in, không xóa toàn bucket.
+Đây là phép thử có ghi tạm, không phải script read-only hoàn toàn. RESULTPASS/exit0
+chỉ xác nhận cácAPI cụ thể này, không chứng minh mọi khả năng bảo mật/EC2 hoặc mọi
+quyềnadmin đều đã được thử. Secret không in/lưu; quyền quản trị chỉ dùng chuẩn bị/dọn
+fixture, kiểmpolicy; các thao tác thử quyền dùng verifier riêng.
+
+Kết quả local ngày28/10/2026: tài khoản n07-storage-verifier chạy bộ Storage
+2/2PDF PASS/exit0; phép thử quyền đọc fixture thành công, upload/delete bị
+AccessDenied403, admin user_list403, policy documents giữ nguyên và cleanup hoàn
+tất, RESULTPASS/exit0. Chỉ xác nhận cácAPI đã thử, chưa nghiệm thu EC2 hoặc tích hợp
+Keycloak. Khuyến nghị dùng credential verifier qua biến môi trường cho các công cụ
+đọc; tác vụ quản trị vẫn dùng tài khoản quản trị riêng. Account/policy nằm trong
+dữ liệu MinIO local; trên máy triển khai mới cần tạo lại hoặc chuyển dữ liệu có
+chủ đích, không tự có khi chỉ clone repo. Không chạy --apply ghi đè tài khoản cũ.
+
+Các file PDF được nhắc trong lệnh là dữ liệu demo local, không nằm trong repo;
+hãy upload PDF của mình rồi truyền đúng tên object. Mã GV-07/GV-MR05 là mã truy
+vết local cho kiểm thử Storage cơ bản/phần mở rộng MinIO trong đề Thầy, không
+yêu cầu tải tài liệu local của người khác. Đây là bộ tiện ích local, chưa là
+API hoặc giao diện quản lý tệp trên website.
