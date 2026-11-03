@@ -39,12 +39,14 @@ docker exec relational-database-server mariadb -uroot -proot -e "USE minicloud; 
 
 echo -e "\n[4/10] Authentication Identity Server (Keycloak Port 8081)..."
 curl -s -I http://localhost:8081/ | head -n 1
+echo "[UI] Dang nhap Keycloak, kiem realm_52300107 / sv01 / sv02 / flask-app."
 
 echo -e "\n[5/10] Object Storage Server (MinIO Console Port 9001)..."
 curl -s -I http://localhost:9001/ | head -n 1
+echo "[UI] MinIO Console: tao demo, upload index.html va tai lai de doi chieu."
 
 echo -e "\n[6/10] Internal DNS Server (Bind9 - web-frontend-server.cloud.local)..."
-docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 dig @dns-server web-frontend-server.cloud.local +short
+docker exec internal-dns-server dig @127.0.0.1 web-frontend-server.cloud.local +short
 
 echo -e "\n[7/10] Monitoring Prometheus & Node Exporter (Port 9090 & 9100)..."
 curl -s -I http://localhost:9100/metrics | head -n 1
@@ -69,7 +71,7 @@ curl -s -I http://localhost/auth/ | head -n 1
 echo -e "\n[10/10] Kiem tra thong mang noi bo (Ping tren cloud-net)..."
 for host in web app-server db keycloak minio prometheus grafana dns-server; do
   echo "--- Ping $host ---"
-  docker exec api-gateway-proxy-server ping -c 2 "$host"
+  docker exec object-storage-server ping -c 2 "$host"
 done
 
 echo -e "\n================================================================="

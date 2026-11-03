@@ -39,8 +39,8 @@ echo -e "\n[Mo rong #3] Database studentdb.students & API /api/students-db..."
 docker exec relational-database-server mariadb -uroot -proot -e "USE studentdb; SELECT * FROM students;"
 curl -s http://localhost/api/students-db && echo ""
 
-echo -e "\n[Mo rong #4] Keycloak OIDC Realm realm_sv001 + Token + /api/secure..."
-TOKEN=$(curl -s -X POST "http://localhost:8081/realms/realm_sv001/protocol/openid-connect/token" \
+echo -e "\n[Mo rong #4] Keycloak OIDC Realm realm_52300107 + Token + /api/secure..."
+TOKEN=$(curl -s -X POST "http://localhost:8081/realms/realm_52300107/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "client_id=flask-app" \
   -d "username=sv01" \
@@ -53,11 +53,16 @@ else
   echo "[WARN] Chua lay duoc token (Keycloak co the dang khoi dong)."
 fi
 
+# Mo rong 5: kiem tra anh public va minh chung PDF tren Console.
+echo -e "\n[Mo rong #5] MinIO avatar va PDF bao cao..."
+curl -fsS --max-time 20 -o /dev/null -w 'Avatar HTTP %{http_code}\n' http://localhost:9000/profile-pics/avatar.jpg
+echo "[UI] Mo avatar an danh; trong documents kiem PDF bao cao, tai ve va mo noi dung."
+
 echo -e "\n[Mo rong #6] Internal DNS (app-backend, minio, keycloak.cloud.local)..."
-docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 sh -c '
-  dig @dns-server app-backend.cloud.local +short
-  dig @dns-server minio.cloud.local +short
-  dig @dns-server keycloak.cloud.local +short
+docker exec internal-dns-server sh -c '
+  dig @127.0.0.1 app-backend.cloud.local +short
+  dig @127.0.0.1 minio.cloud.local +short
+  dig @127.0.0.1 keycloak.cloud.local +short
 '
 
 echo -e "\n[Mo rong #7] Prometheus Scrape Target 'web' (web-frontend-server:80/metrics)..."

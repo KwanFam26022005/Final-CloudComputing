@@ -221,3 +221,11 @@ hãy upload PDF của mình rồi truyền đúng tên object. Mã GV-07/GV-MR05
 vết local cho kiểm thử Storage cơ bản/phần mở rộng MinIO trong đề Thầy, không
 yêu cầu tải tài liệu local của người khác. Đây là bộ tiện ích local, chưa là
 API hoặc giao diện quản lý tệp trên website.
+
+## Script task5
+
+Sau khi chuẩn bị venv/SDK ở trên, từ gốc repo chạy `bash scripts/verify-task5.sh` hoặc
+`./scripts/verify-task5.ps1`. Script dùng các verify đã chuyển vào `scripts/`.
+Nội dung: HTML khớp source, JPEG public, PDF private, link ký đúng/sai chữ ký.
+`--readonly` (PowerShell: `-ReadOnly`) chạy kiểm quyền bằng fixture UUID khi có credential verifier.
+Mặc định giữ nguyên bucket/object/policy; thao tác UI và thời điểm hết hạn thực tế kiểm riêng.

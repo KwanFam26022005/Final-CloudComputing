@@ -54,12 +54,14 @@ docker exec relational-database-server mariadb -uroot -proot -e "USE minicloud; 
 
 Write-Host "`n[4/10] Authentication Identity Server (Keycloak Port 8081)..." -ForegroundColor White
 Check-Url "Keycloak Console" "http://localhost:8081/"
+Write-Host "[UI] Dang nhap Keycloak, kiem realm_52300107 / sv01 / sv02 / flask-app." -ForegroundColor Gray
 
 Write-Host "`n[5/10] Object Storage Server (MinIO Console Port 9001)..." -ForegroundColor White
 Check-Url "MinIO Console" "http://localhost:9001/"
+Write-Host "[UI] MinIO Console: tao demo, upload index.html va tai lai de doi chieu." -ForegroundColor Gray
 
 Write-Host "`n[6/10] Internal DNS Server (Bind9 Port 1053 - web-frontend-server.cloud.local)..." -ForegroundColor White
-docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 dig @dns-server web-frontend-server.cloud.local +short
+docker exec internal-dns-server dig "@127.0.0.1" web-frontend-server.cloud.local +short
 
 Write-Host "`n[7/10] Monitoring Prometheus & Node Exporter (Port 9090 & 9100)..." -ForegroundColor White
 Check-Url "Node Exporter Metrics" "http://localhost:9100/metrics"
@@ -92,7 +94,7 @@ Check-Url "Gateway Auth (/auth/)" "http://localhost/auth/"
 Write-Host "`n[10/10] Kiem tra thong mang noi bo (Ping tren cloud-net)..." -ForegroundColor White
 $targets = @("web", "app-server", "db", "keycloak", "minio", "prometheus", "grafana", "dns-server")
 foreach ($t in $targets) {
-    docker exec api-gateway-proxy-server ping -c 2 $t
+    docker exec object-storage-server ping -c 2 $t
 }
 
 Write-Host "`n=================================================================" -ForegroundColor Cyan

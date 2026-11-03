@@ -1,8 +1,7 @@
-"""Create a NEW local MinIO verifier account; dry run unless --apply.
+"""Tao tai khoan MinIO doc; --apply de ap dung thay doi.
 
-Prompts for a new secret without echo. Never changes existing users or policies.
-Admin credentials come from local Compose, not the verifier environment variables.
-"""
+Nhap mat khau an, giu nguyen user va policy da ton tai.
+Thong tin quan tri duoc doc tu Compose local."""
 
 import argparse
 import getpass
@@ -51,7 +50,7 @@ def main():
         raise ValueError("Use at least 16 characters")
     if getpass.getpass("Confirm new verifier secret (hidden): ") != secret:
         raise ValueError("Secrets do not match; no changes made")
-    # Requests are not transactional. Report completed stages; never delete on error.
+    # Bao tung buoc da xong de xu ly loi giua cac lenh API.
     admin.policy_add(POLICY, policy=policy)
     print(f"Created new policy: {POLICY}", flush=True)
     admin.user_add(USER, secret)

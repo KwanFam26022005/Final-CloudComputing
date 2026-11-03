@@ -1,9 +1,8 @@
-"""Cold backup of the existing local Keycloak container, without recreating it.
+"""Sao luu nguoi du lieu Keycloak local.
 
-Briefly stops only authentication-identity-server and restarts it in finally.
-Requires an explicit --output directory already excluded from this Git clone.
-Backups contain sensitive database contents: keep them local and private.
-"""
+Tam dung authentication-identity-server va khoi dong lai trong finally.
+--output phai tro den thu muc da duoc loai tru khoi Git.
+Du lieu backup duoc giu rieng tren may local."""
 
 import argparse
 from datetime import datetime, timezone
@@ -28,7 +27,7 @@ def main():
     root = Path(__file__).resolve().parent.parent
     parent = args.output.resolve()
     relative = parent.relative_to(root)
-    # Keep database backups out of Git, even if the caller changes the location.
+    # Kiem tra thu muc backup duoc loai tru khoi Git.
     run("git", "-C", str(root), "check-ignore", "--", str(relative / "probe"))
     tracked = run("git", "-C", str(root), "ls-files", "--", str(relative)).stdout
     if tracked.strip():
@@ -36,7 +35,7 @@ def main():
     inspect = json.loads(run("docker", "inspect", CONTAINER).stdout)[0]
     if not inspect["State"]["Running"]:
         raise ValueError("Expected running Keycloak; no state was changed")
-    # This procedure backs up the embedded lab DB, not an external database.
+    # Xac nhan Keycloak dang dung database nhung cua lab.
     env = dict(item.split("=", 1) for item in inspect["Config"]["Env"] if "=" in item)
     if env.get("KC_DB", "dev-file") != "dev-file":
         raise ValueError("This backup is only for the local dev-file database")
@@ -84,6 +83,6 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except (OSError, ValueError, KeyError, subprocess.SubprocessError):
-        # Do not dump inspect environment or process output containing secrets.
+        # An bien moi truong va output tien trinh co thong tin bi mat.
         print("FAIL: backup incomplete or restart failed; keep existing container and inspect its state.")
         sys.exit(1)
