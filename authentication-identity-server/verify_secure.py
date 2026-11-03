@@ -27,12 +27,13 @@ def call_secure(url, token=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--app-url", default="http://localhost:8085/secure")
+    parser.add_argument("--auth-url", default="http://localhost:8081", help="Public Keycloak base URL; may include /auth")
     parser.add_argument("--audience", default="myapp")
     args = parser.parse_args()
     realm = json.loads(
         (Path(__file__).parent / "import/realm-export.json").read_text(encoding="utf-8")
     )
-    issuer = "http://localhost:8081/realms/" + realm["realm"]
+    issuer = args.auth_url.rstrip("/") + "/realms/" + realm["realm"]
     if read_json(issuer + "/.well-known/openid-configuration").get("issuer") != issuer:
         raise ValueError("OIDC issuer mismatch")
     print("Realm:", realm["realm"])
@@ -66,7 +67,7 @@ def main():
             record("tampered signature", status == 401, f"HTTP {status} (expected 401)")
 
     print("Tokens/passwords were not printed or saved to files.")
-    print("Wrong issuer/audience, expiry and Gateway integration are not covered by this test.")
+    print("Wrong issuer/audience, expiry and browser login redirects are not covered by this test.")
     return 0 if all(checks) else 1
 
 

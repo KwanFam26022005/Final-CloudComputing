@@ -35,31 +35,15 @@ docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 sh -c '
 '
 ```
 
-## 4. Cấu hình local đã đối chiếu với image ISC
+## 4. Cấu hình DNS đã tích hợp vào Compose gốc
 
-Ngày 27/10/2026, image `internetsystemsconsortium/bind9:9.18` đã chạy được trên
-Docker Desktop nhưng trả REFUSED cho zone lab. Kiểm tra thực tế cho thấy
-`/etc/bind/named.conf` mặc định trong image không include các file options/local
-đang được mount từ dự án. `named-checkzone` hợp lệ riêng chưa chứng minh server
-đang phục vụ zone đó.
-
-Module bổ sung `named.conf` để include hai file cấu hình của dự án và
-`compose.local.yml` để mount đúng entry point, đưa log ra Docker, khai báo
-`linux/amd64` đúng metadata image hiện có. Mac ARM64 chạy image qua giả lập;
-đây là biện pháp tương thích lab, không phải bản image ARM64 native.
-Không sửa Compose chung hoặc IP zone để xử lý lỗi include.
-
-Chạy từ thư mục gốc repository:
+Compose gốc mount `named.conf` để include đúng options/local/zone, chạy `named -g`
+và khai báo `linux/amd64` theo image ISC đang dùng. Máy Mac ARM64 dùng giả lập;
+EC2 x86_64 dùng cùng cấu hình theo kiến trúc native. Không cần ghép override.
 
 ```bash
-docker compose -f docker-compose.yml -f internal-dns-server/compose.local.yml config -q
-docker compose -f docker-compose.yml -f internal-dns-server/compose.local.yml up -d --no-deps internal-dns-server
-docker compose -f docker-compose.yml -f internal-dns-server/compose.local.yml ps internal-dns-server
-```
-
-Sau khi service chạy, kiểm tra config/zone và query:
-
-```bash
+docker compose config -q
+docker compose up -d --no-deps internal-dns-server
 docker exec internal-dns-server named-checkconf -z /etc/bind/named.conf
 docker exec internal-dns-server named-checkzone cloud.local /etc/bind/db.cloud.local
 dig @127.0.0.1 -p 1053 web-frontend-server.cloud.local A +norecurse
@@ -68,11 +52,7 @@ dig @127.0.0.1 -p 1053 minio.cloud.local A +norecurse
 dig @127.0.0.1 -p 1053 keycloak.cloud.local A +norecurse
 ```
 
-Chỉ nghiệm thu khi query trả NOERROR, authoritative answer và đúng IP từng record.
-Thử thêm `+tcp` để kiểm tra cổng TCP. IP trong zone là dữ liệu lab; kiểm tra kết
-nối đến service thật qua Docker aliases là phép kiểm tra riêng.
-Mac có thể nhắc `.local` dành cho mDNS; bài lab giữ `cloud.local` theo đề và các
-lệnh trên chỉ định rõ DNS server/cổng để tránh nhầm resolver.
-
-Khi quản lý DNS theo cấu hình này, dùng cả hai file Compose. Duy sẽ điều phối việc
-tích hợp cấu hình chính vào Compose chung ở giai đoạn bàn giao.
+Kiểm thêm `+tcp`: mong đợi NOERROR, cờ aa và đúng bản ghi A. Đây là IP zone lab,
+không tự trở thành IP thật của Docker container; kiểm thông mạng qua alias riêng.
+`compose.local.yml` giữ tương thích lệnh cũ, không bắt buộc. Kiểm thử EC2 riêng sau
+khi TV4 triển khai; không tự mở DNS public để hoàn thành bài lab nội bộ.

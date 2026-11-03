@@ -25,39 +25,43 @@ Mô phỏng dịch vụ lưu trữ đối tượng phi cấu trúc chuẩn S3 (t
    - Upload ảnh đại diện **`avatar.jpg`** và mở đường dẫn public trực tiếp trên trình duyệt: `http://localhost:9000/profile-pics/avatar.jpg`.
    - Tạo thêm bucket tên **`documents`** và upload file **PDF báo cáo** của nhóm.
 
-## 4. Chạy local khi không tải được image MinIO cũ
+## 4. Khởi chạy từ Compose gốc (local và máy triển khai mới)
 
-Ngày 27/10/2026, chạy image `minio/minio:latest` trong Compose chung bị
-`pull access denied`; kiểm tra manifest bản
-`quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z` cũng trả 401.
-Chưa có căn cứ yêu cầu người dùng đăng nhập registry để xử lý lỗi này.
-
-Module cung cấp Dockerfile build từ **mã nguồn MinIO chính thức**, cố định release
-`RELEASE.2025-10-15T17-29-55Z`, cùng file Compose bổ sung chỉ áp dụng cho Storage.
-Các image Go và Alpine được ghim digest multi-platform, có Linux ARM64 và AMD64.
-Không cần cài Go trên máy host; nguồn được tải và biên dịch trong build stage.
-`.dockerignore` loại dữ liệu runtime khỏi build context.
-
-Nguồn tham khảo: [release và hướng dẫn build chính thức](https://github.com/minio/minio/releases/tag/RELEASE.2025-10-15T17-29-55Z).
-Đây là cách chuẩn bị image cho lab, không phải yêu cầu riêng của giảng viên.
-
-Chạy từ thư mục gốc dự án, thực hiện từng bước và kiểm tra kết quả:
+Compose gốc đã khai báo `build: ./object-storage-server` và image local cố định
+`myminicloud-minio:RELEASE.2025-10-15T17-29-55Z`, với `pull_policy: build`.
+`docker compose up -d` tự build từ Dockerfile, không cố pull `minio/minio:latest`.
+Không cần Docker login hoặc file override để chạy Storage.
 
 ```bash
-# 1. Build image local; lần đầu cần tải Go modules và có thể mất vài phút.
-docker compose -f docker-compose.yml -f object-storage-server/compose.source.yml build object-storage-server
-
-# 2. Sau khi build thành công, chạy riêng Storage và xem trạng thái.
-docker compose -f docker-compose.yml -f object-storage-server/compose.source.yml up -d --no-deps object-storage-server
-docker compose -f docker-compose.yml -f object-storage-server/compose.source.yml ps object-storage-server
+# Chạy cả cụm khi các module nhóm đã sẵn sàng:
+docker compose up -d
+# Hoặc chỉ kiểm tra Storage:
+docker compose up -d --no-deps object-storage-server
+docker compose ps object-storage-server
 ```
 
-Luôn dùng cả hai file khi quản lý Storage theo cấu hình này. Compose gốc vẫn trỏ
-image cũ; không dùng lại lệnh `up` chỉ với Compose gốc cho service này.
-Network `cloud-net`, cổng 9000/9001, biến môi trường và mount dữ liệu được kế thừa.
-Không sửa Compose chung, không push image hoặc thay đổi module khác.
-Image thực tế và chức năng Storage chỉ được xác nhận sau khi build/run và kiểm tra
-thành công; file cấu hình hợp lệ chưa đủ để nghiệm thu runtime.
+Lần đầu cần Internet để tải base image, source MinIO và Go modules; build có thể
+mất vài phút. Các lần sau dùng build cache. Có thể chủ động build trước bằng
+`docker compose build object-storage-server`. Base image được ghim multi-platform
+digest; Dockerfile không ép ARM64, có thể build theo kiến trúc máy đích.
+Đã có healthcheck trong Dockerfile. `object-storage-server/data:/data` giữ nguyên
+để không mất bucket/object/policy/tài khoản hiện có. Không xóa data để sửa lỗi pull.
+`.dockerignore` loại runtime data và credential khỏi build context.
+
+`compose.source.yml` chỉ còn là tương thích với lệnh cũ, không phải điều kiện
+khởi chạy. Khi cập nhật code, vẫn phải nhận đủ Dockerfile, .dockerignore và Compose
+trong cùng PR. Nguồn: [MinIO release chính thức](https://github.com/minio/minio/releases/tag/RELEASE.2025-10-15T17-29-55Z).
+
+### TV4 triển khai EC2
+
+Clone nhánh tích hợp sau khi leader merge PR. Chuẩn bị `.env` trên EC2 (không commit)
+và cổng/Security Group theo phân công. Chạy Compose từ gốc repo; build MinIO sẽ diễn
+ra ngay trên máy EC2, không cần image đã tồn tại trên Mac của thành viên 3.
+Bucket/object/tài khoản runtime phải khởi tạo lại hoặc chuyển dữ liệu có chủ đích;
+không tự đi theo Git. Tiện ích Python hiện dùng API `localhost:9000` để chạy ngay
+trên host local/EC2; link ký đó không dùng cho trình duyệt máy khác nếu chưa thống
+nhất public endpoint với Backend/Gateway. Không sửa hostname của link sau khi ký.
+Các chức năng runtime trên EC2 phải được kiểm thử lại, không dùng kết quả Mac thay thế.
 
 ## 5. Cấp quyền đọc công khai avatar bằng SDK chính thức
 
