@@ -31,7 +31,6 @@ def main():
     result = subprocess.run(
         [
             "docker", "compose", "-f", str(root / "docker-compose.yml"),
-            "-f", str(root / "object-storage-server/compose.source.yml"),
             "config", "--format", "json",
         ],
         cwd=root, capture_output=True, text=True, check=True,

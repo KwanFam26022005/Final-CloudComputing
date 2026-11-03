@@ -6,6 +6,36 @@
 
 ---
 
+## Chạy từ Compose gốc
+
+Yêu cầu: Docker Engine/Compose trên Ubuntu, hoặc Docker Desktop trên Windows/Mac
+ở chế độ **Linux containers**, có `docker compose` và BuildKit. Không cần cài Go
+hoặc Python trên host chỉ để khởi chạy dịch vụ. Các script Python là công cụ
+quản trị/kiểm thử tùy chọn, dùng theo README module.
+
+```bash
+docker compose up -d
+```
+
+Compose đã tích hợp phần thành viên 3, không cần ghép override:
+- MinIO tự build từ `object-storage-server/Dockerfile`; không pull image cũ
+  `minio/minio:latest`. Lần đầu cần Internet và thời gian build Go.
+- Keycloak tự tạo/dùng lại named volume `n07-keycloak-data`, giữ import read-only.
+- Bind9 nạp `internal-dns-server/named.conf`, có command và platform tương ứng.
+
+Không xóa volume/data để sửa lỗi pull. Máy mới không có dữ liệu local của thành
+viên khác: khởi tạo realm mẫu, bucket/file/tài khoản hoặc chuyển dữ liệu có chủ đích.
+TV4 vẫn cần chuẩn bị `.env`, cổng, địa chỉ OIDC/public endpoint và kiểm thử trên EC2;
+không commit bí mật. Code hiện tại của các thành viên khác được giữ nguyên.
+Có thể kiểm riêng phần m3:
+
+```bash
+docker compose up -d --no-deps object-storage-server authentication-identity-server internal-dns-server
+```
+Xem README từng module để kiểm tra chức năng; Running không thay nghiệm thu.
+
+---
+
 ## 📚 Mục Lục Tài Liệu Nền Tảng (`docs/`)
 
 Toàn bộ thành viên trong nhóm **BẮT BUỘC** đọc kỹ bộ tài liệu trong thư mục [`docs/`](./docs/) trước khi bắt đầu code:

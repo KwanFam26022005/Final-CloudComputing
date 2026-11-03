@@ -82,6 +82,7 @@ def verify_user(issuer, user, expected_audience):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--auth-url", default="http://localhost:8081", help="Public Keycloak base URL; may include /auth")
     parser.add_argument("--audience", default="myapp", help="Expected API audience")
     args = parser.parse_args()
     realm = json.loads(
@@ -89,7 +90,7 @@ def main():
             encoding="utf-8"
         )
     )
-    issuer = "http://localhost:8081/realms/" + realm["realm"]
+    issuer = args.auth_url.rstrip("/") + "/realms/" + realm["realm"]
     discovery = read_json(issuer + "/.well-known/openid-configuration")
     if discovery.get("issuer") != issuer:
         raise ValueError("OIDC issuer mismatch")

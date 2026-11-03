@@ -46,8 +46,8 @@ Thông tin bàn giao cho thành viên 2:
   được HTTP 200 và đúng user; thiếu/sai/hết hạn token bị từ chối theo chuẩn nhóm.
 
 Phần App hiện còn issuer mặc định realm master và tắt verify issuer/audience;
-thành viên 2 xử lý code/cấu hình tương ứng. Phần `/auth/` qua Gateway cần phối hợp người điều phối. Volume Keycloak đã có
-override module và được kiểm thử local; cần giữ override khi tích hợp Compose. Không ghi tích hợp hoàn tất chỉ
+thành viên 2 xử lý code/cấu hình tương ứng. Phần `/auth/` qua Gateway cần phối hợp người điều phối. Volume Keycloak đã được
+tích hợp vào Compose gốc; giữ nguyên tên volume để bảo toàn dữ liệu. Không ghi tích hợp hoàn tất chỉ
 từ kết quả cấp token hoặc UserInfo.
 
 Khi App sẵn sàng, kiểm tra tích hợp trực tiếp bằng công cụ của module Auth:
@@ -108,8 +108,9 @@ có thể chỉ định `--helper-image <image-local>` có sẵn các lệnh
 `sh`, `cp`, `chown`, `find`, `sha256sum`. Không cần module Storage để khởi tạo
 Keycloak mới theo mục bên dưới. Không dùng `prepare_volume.py` để ghi đè volume cũ.
 
-compose.persistence.yml khai báo volume external và giữ import mount từ Compose gốc.
-Đây là cấu hình bổ sung module Auth theo GV-02, chưa sửa Compose chung. Không áp dụng
+Compose gốc khai báo named volume `n07-keycloak-data`, tự tạo trên máy mới và giữ
+import read-only. `compose.persistence.yml` là tùy chọn external cho quy trình cũ,
+không còn bắt buộc để chạy Auth. Không áp dụng
 cho container có dữ liệu trước khi chốt chuyển snapshot và kiểm tra restore. Thay đổi
 quản trị sau thời điểm backup không nằm trong snapshot; nếu có thay đổi cần backup
 mới và phương án chuyển lại, không ghi đè volume đang dùng. Các phiên/token tạm có
@@ -123,38 +124,58 @@ thay đổi quản trị cần giữ sau thời điểm backup. Dùng cùng imag
 image local trước khi áp dụng, không pull latest mới trong lúc chuyển H2.
 
 ```bash
-docker compose -f docker-compose.yml -f authentication-identity-server/compose.persistence.yml up -d --no-deps --no-build --pull never authentication-identity-server
-docker compose -f docker-compose.yml -f authentication-identity-server/compose.persistence.yml ps authentication-identity-server
+docker compose up -d --no-deps --no-build --pull never authentication-identity-server
+docker compose ps authentication-identity-server
 ```
 
-Compose tạo lại riêng Auth để gắn volume; có gián đoạn ngắn. Từ bước này luôn ghép
-compose.persistence.yml khi quản lý Auth, nếu chạy lại bằng Compose gốc riêng sẽ
-làm mất mount khỏi cấu hình container. Không dùng down -v hoặc xóa volume.
+Compose tạo lại riêng Auth để gắn volume; có gián đoạn ngắn. Compose gốc đã giữ
+mount dữ liệu, không cần ghép override. Không dùng down -v hoặc xóa volume.
 Sau khởi động cần xác minh mount thực tế, verify_oidc.py, Admin Console và kiểm tra
 lại sau recreate. Running chưa đủ để chốt lưu bền. Nếu startup lỗi, giữ volume và
 backup; đọc log có lọc bí mật trước, không xóa/reset để chữa lỗi. Không rollback
-bằng cách chỉ bỏ override vì container cũ đã bị thay thế và data không còn ở lớp
-writable cũ. Chưa nghiệm thu cho tới khi kiểm tra sau chuyển thực sự đạt.
+bằng cách bỏ mount vì container cũ đã bị thay thế và dữ liệu phải giữ trong volume. Chưa nghiệm thu cho tới khi kiểm tra sau chuyển thực sự đạt.
 
 Kết quả local ngày28/10/2026: backup/restore và force-recreate với volume đã kiểm
 đạt; bộ khóa ký giữ nguyên, sv01/sv02 Token/UserInfo200 và claims/audience đúng sau
-recreate. Minh chứng riêng được giữ local, chưa nghiệm thu EC2. Luôn ghép override
-persistence khi chạy Auth; không dùng lại base Compose riêng cho service này.
+recreate. Minh chứng riêng được giữ local, chưa nghiệm thu EC2. Compose gốc nay đã chứa cấu hình persistence; không cần ghép override.
 
 ### Khởi tạo mới trên máy chưa có dữ liệu Keycloak
 
 Chỉ dùng khi thực sự khởi tạo mới, không dùng để thay thế dữ liệu cần bảo toàn:
 
 ```bash
-docker volume create n07-keycloak-data
-docker compose -f docker-compose.yml -f authentication-identity-server/compose.persistence.yml up -d --no-deps authentication-identity-server
+docker compose up -d --no-deps authentication-identity-server
 python3 authentication-identity-server/verify_oidc.py --audience myapp
 ```
 
-Volume external cần tồn tại trước khi Compose chạy. Realm import tạo dữ liệu mẫu
+Compose tự tạo named volume nếu chưa có. Máy đã có `n07-keycloak-data` sẽ dùng lại
+volume đó (có thể cảnh báo nguồn tạo volume cũ); không xóa volume để bỏ cảnh báo. Realm import tạo dữ liệu mẫu
 trong database mới; không coi đó là phục hồi database. Không xóa volume nếu realm
 không khớp mong đợi. Bộ dữ liệu và mật khẩu có sẵn trong import chỉ dùng cho lab.
 
 Các mã GV-* trong README là mã truy vết local: GV-02 tương ứng yêu cầu kỹ thuật
 chung về volume, GV-MR04 tương ứng phần mở rộng Keycloak của đề Thầy. Không cần
 file checklist hoặc tài liệu shared riêng để chạy các lệnh trong module này.
+
+### Kiểm tra tích hợp API qua Gateway
+
+Khi các service Web/App/Gateway của nhóm đã sẵn sàng:
+
+```bash
+python3 authentication-identity-server/verify_secure.py --app-url http://localhost/api/secure
+```
+
+Ngày03/11/2026 đã kiểm 5/5 ca qua Gateway trên local. Kết quả này không nghiệm thu
+browser login: cấu hình `/auth/` hiện trả302 về `/admin/` trên cổng Gateway, cần
+thành viên1 phối hợp Auth để thống nhất hostname/context path và kiểm redirect.
+Backend vẫn tắt verify issuer/audience, thuộc việc thành viên2. Không ghi SSO hoặc
+triển khai EC2 hoàn tất từ kết quả `/api/secure`200.
+
+### Địa chỉ khi TV4 kiểm trên EC2
+
+Các script Auth nhận `--auth-url` (mặc định `http://localhost:8081`); khi Keycloak
+cấu hình hostname công khai, truyền đúng base URL công khai đó, không so issuer
+localhost với issuer Public IP. `--app-url` chọn API trực tiếp hoặc qua Gateway.
+Dùng `--help` xem tham số. TV4 cần thống nhất KC_HOSTNAME, OIDC_ISSUER, redirectURI
+và webOrigins theo địa chỉ thực tế, không chỉ clone rồi giữ localhost trên EC2.
+Các giá trị này phải khớp hợp đồng nhóm; không tự chọn MSSV đại diện khác.
