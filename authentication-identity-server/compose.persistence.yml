@@ -1,5 +1,5 @@
-# Apply from the root with docker-compose.yml only after restoring the volume.
-# external:true prevents Compose from silently creating an empty data volume.
+# Ghep voi docker-compose.yml tai goc sau khi khoi phuc volume.
+# external:true yeu cau volume da ton tai de tranh tao volume rong.
 services:
   authentication-identity-server:
     volumes:

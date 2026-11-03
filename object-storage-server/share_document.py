@@ -1,7 +1,6 @@
-"""Read-only local demo: temporarily share an existing private PDF.
+"""Chia se tam thoi PDF private bang link ky tren local.
 
-Does not upload objects, change policies, or save signed URLs/credentials.
-"""
+Giu nguyen object va policy; giu link ky va thong tin dang nhap trong bo nho."""
 
 import argparse
 from datetime import timedelta

@@ -1,9 +1,9 @@
-# Merge with the root Compose file; all relative paths resolve from repo root.
+# Ghep voi Compose goc; duong dan tuong doi tinh tu goc repo.
 services:
   internal-dns-server:
-    # The verified ISC 9.18 image is linux/amd64; Docker Desktop emulates it on ARM.
+    # Image ISC 9.18 dung linux/amd64; Docker Desktop gia lap tren ARM.
     platform: linux/amd64
-    # Keep the server in the foreground and send logs to Docker stdout/stderr.
+    # Chay server o foreground va gui log ra stdout/stderr cua Docker.
     command: ["-g", "-c", "/etc/bind/named.conf"]
     volumes:
       - ./internal-dns-server/named.conf:/etc/bind/named.conf:ro

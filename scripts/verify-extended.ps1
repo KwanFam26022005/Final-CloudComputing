@@ -59,9 +59,9 @@ try {
     Write-Host "[WARN] /api/students-db -> $($_.Exception.Message)" -ForegroundColor Yellow
 }
 
-Write-Host "`n[Mo rong #4] Keycloak OIDC Realm realm_sv001 + Token + /api/secure..." -ForegroundColor White
+Write-Host "`n[Mo rong #4] Keycloak OIDC Realm realm_52300107 + Token + /api/secure..." -ForegroundColor White
 try {
-    $tokenResp = Invoke-RestMethod -Method Post -Uri "http://localhost:8081/realms/realm_sv001/protocol/openid-connect/token" `
+    $tokenResp = Invoke-RestMethod -Method Post -Uri "http://localhost:8081/realms/realm_52300107/protocol/openid-connect/token" `
         -ContentType "application/x-www-form-urlencoded" `
         -Body "client_id=flask-app&username=sv01&password=sv01pass&grant_type=password"
     $token = $tokenResp.access_token
@@ -71,11 +71,19 @@ try {
     Write-Host "[WARN] OIDC /api/secure -> $($_.Exception.Message)" -ForegroundColor Yellow
 }
 
+# Mo rong 5: kiem tra anh public va minh chung PDF tren Console.
+Write-Host "`n[Mo rong #5] MinIO avatar va PDF bao cao..." -ForegroundColor White
+try {
+    $m3Avatar = Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:9000/profile-pics/avatar.jpg" -TimeoutSec 10 -ErrorAction Stop
+    Write-Host "[PASS] Avatar HTTP $($m3Avatar.StatusCode)" -ForegroundColor Green
+} catch { Write-Host "[FAIL] Avatar chua doc public duoc." -ForegroundColor Red }
+Write-Host "[UI] Mo avatar an danh; trong documents kiem PDF bao cao, tai ve va mo noi dung." -ForegroundColor Gray
+
 Write-Host "`n[Mo rong #6] Internal DNS (app-backend, minio, keycloak.cloud.local)..." -ForegroundColor White
-docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 sh -c "
-  dig @dns-server app-backend.cloud.local +short
-  dig @dns-server minio.cloud.local +short
-  dig @dns-server keycloak.cloud.local +short
+docker exec internal-dns-server sh -c "
+  dig @127.0.0.1 app-backend.cloud.local +short
+  dig @127.0.0.1 minio.cloud.local +short
+  dig @127.0.0.1 keycloak.cloud.local +short
 "
 
 Write-Host "`n[Mo rong #7] Prometheus Scrape Target 'web' (web-frontend-server:80)..." -ForegroundColor White

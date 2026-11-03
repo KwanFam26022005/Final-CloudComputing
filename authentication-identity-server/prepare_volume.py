@@ -1,4 +1,4 @@
-"""Restore a cold local backup into a NEW volume; never switches live Keycloak."""
+"""Khoi phuc backup nguoi vao volume moi; giu nguyen Keycloak dang chay."""
 
 import argparse
 import hashlib
@@ -37,13 +37,13 @@ def main():
         expected["/target/" + entry["path"]] = digest
     if not any(name.endswith(".mv.db") and name.startswith("/target/h2/") for name in expected):
         raise ValueError("Expected H2 database in backup")
-    # Resolve the existing helper image to its immutable local ID; no pull occurs.
+    # Lay ID co dinh cua image ho tro da co tren may.
     helper = run("docker", "image", "inspect", args.helper_image, "--format", "{{.Id}}").stdout.strip()
     names = run("docker", "volume", "ls", "--format", "{{.Name}}").stdout.splitlines()
     if VOLUME in names:
         raise ValueError("Target volume already exists; left untouched. Inspect it before retrying.")
     run("docker", "volume", "create", "--label", "n07.module=authentication", VOLUME)
-    # No network and no Keycloak process: this helper only copies and hashes files.
+    # Chay container ho tro voi mang tat de copy file va tinh hash.
     result = run(
         "docker", "run", "--rm", "--network", "none", "--user", "0:0",
         "--mount", f"type=bind,source={data},target=/backup,readonly",

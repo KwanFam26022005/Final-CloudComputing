@@ -1,12 +1,9 @@
-"""GV-MR04: verify local demo token issuance without printing credentials/tokens.
+"""GV-MR04: kiem tra cap token va UserInfo cho tai khoan demo.
 
-Run on the host: python3 authentication-identity-server/verify_oidc.py
-Reads demo credentials from the realm import; keeps tokens in memory only.
-Reference: https://www.keycloak.org/securing-apps/oidc-layers
-This checks Keycloak Token/UserInfo, not the Flask /secure integration.
-JWT claims are inspected for the integration contract; signature verification in
-the Flask application is a separate test. Keycloak validates the UserInfo call.
-"""
+Chay: python3 authentication-identity-server/verify_oidc.py
+Doc tai khoan tu realm import, giu token trong bo nho.
+Doi chieu cac claim JWT; chu ky JWT duoc kiem tra tai App trong bo test /secure.
+Tai lieu: https://www.keycloak.org/securing-apps/oidc-layers"""
 
 import argparse
 import base64
@@ -19,6 +16,7 @@ from urllib.request import Request, urlopen
 
 
 def read_json(request):
+    """Doc JSON tu phan hoi HTTP 200."""
     with urlopen(request, timeout=15) as response:
         if response.status != 200:
             raise ValueError("Expected HTTP 200")
@@ -26,6 +24,7 @@ def read_json(request):
 
 
 def verify_user(issuer, user, expected_audience):
+    """Lay token, doi chieu UserInfo va cac claim."""
     passwords = [
         credential["value"]
         for credential in user.get("credentials", [])
@@ -81,22 +80,28 @@ def verify_user(issuer, user, expected_audience):
 
 
 def main():
+    """Doc tham so va chay cac buoc kiem thu."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--auth-url", default="http://localhost:8081", help="Public Keycloak base URL; may include /auth")
     parser.add_argument("--audience", default="myapp", help="Expected API audience")
     args = parser.parse_args()
+
     realm = json.loads(
-        (Path(__file__).parent / "import" / "realm-export.json").read_text(
+        (Path(__file__).resolve().parent / "import/realm-export.json").read_text(
             encoding="utf-8"
         )
     )
+
+    # Tao issuer tu realm va dia chi Keycloak.
     issuer = args.auth_url.rstrip("/") + "/realms/" + realm["realm"]
     discovery = read_json(issuer + "/.well-known/openid-configuration")
     if discovery.get("issuer") != issuer:
         raise ValueError("OIDC issuer mismatch")
     print("Realm:", realm["realm"])
     failed = False
+    # Kiem tra tung tai khoan demo.
     for username in ("sv01", "sv02"):
+        print(f"\n--- Tai khoan {username} ---", flush=True)
         try:
             users = [u for u in realm.get("users", []) if u.get("username") == username]
             if len(users) != 1:
@@ -112,6 +117,7 @@ def main():
         except (ValueError, KeyError, TypeError, URLError, TimeoutError) as error:
             print(f"FAIL {username}: {type(error).__name__}; check configuration/connectivity")
             failed = True
+    print()
     print("Tokens/passwords were not printed or saved to files.")
     return 1 if failed else 0
 

@@ -1,9 +1,8 @@
-"""GV-MR05: allow anonymous GET of the lab avatar using the official MinIO SDK.
+"""GV-MR05: cap quyen GET avatar an danh bang MinIO SDK.
 
-Default: inspect and display the proposed grant. Pass --apply to update policy.
-Credentials are read from local Compose configuration and never printed/saved.
-Reference: https://github.com/minio/minio-py/blob/master/examples/set_bucket_policy.py
-"""
+Mac dinh hien thi quyen de xuat; --apply de cap nhat policy.
+Thong tin dang nhap duoc doc tu Compose local va giu trong bo nho.
+Tai lieu: https://github.com/minio/minio-py/blob/master/examples/set_bucket_policy.py"""
 
 import argparse
 import json
@@ -77,7 +76,7 @@ def main():
         "Action": ["s3:GetObject"],
         "Resource": [f"arn:aws:s3:::{BUCKET}/{OBJECT}"],
     }
-    # Preserve unrelated grants. Re-running updates only this named statement.
+    # Cap nhat statement theo ten va giu cac quyen khac.
     policy["Statement"] = [s for s in statements if s.get("Sid") != SID] + [grant]
     if not args.apply:
         print("Proposed additional grant:")
@@ -87,7 +86,7 @@ def main():
 
     client.set_bucket_policy(BUCKET, json.dumps(policy))
     print("Applied public GetObject grant for profile-pics/avatar.jpg")
-    # A plain, unsigned GET verifies access without Console session or a signed URL.
+    # Dung GET khong ky de kiem tra truy cap an danh.
     with urlopen(PUBLIC_URL, timeout=15) as public:
         if public.status != 200:
             raise ValueError("Anonymous GET did not return HTTP 200")

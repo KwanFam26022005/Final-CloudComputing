@@ -179,3 +179,10 @@ localhost với issuer Public IP. `--app-url` chọn API trực tiếp hoặc qu
 Dùng `--help` xem tham số. TV4 cần thống nhất KC_HOSTNAME, OIDC_ISSUER, redirectURI
 và webOrigins theo địa chỉ thực tế, không chỉ clone rồi giữ localhost trên EC2.
 Các giá trị này phải khớp hợp đồng nhóm; không tự chọn MSSV đại diện khác.
+
+## Script task4
+
+Từ gốc repo chạy `bash scripts/verify-task4.sh` hoặc `./scripts/verify-task4.ps1`.
+Nội dung: Docker/Auth, token hai user, `/secure` trực tiếp/qua Gateway, volume.
+`--recreate-auth` (PowerShell: `-RecreateAuth`) kiểm tra giữ dữ liệu sau khi tạo lại container, có gián đoạn Auth ngắn.
+Các verify Python nằm trong `authentication-identity-server/`; cần Python3. Có thể đặt `N07_PYTHON` trỏ tới Python đã cài.

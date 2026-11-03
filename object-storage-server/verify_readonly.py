@@ -1,9 +1,8 @@
-"""Verify read-only MinIO permissions using disposable, uniquely named objects.
+"""Kiem tra quyen tai khoan MinIO doc bang object tam co ten UUID.
 
-Requires verifier credentials in N07_MINIO_ACCESS_KEY/N07_MINIO_SECRET_KEY.
-Root credentials from Compose only create and clean up this test's own objects.
-Never deletes existing PDFs, changes users, or changes policies.
-"""
+Doc tai khoan tu N07_MINIO_ACCESS_KEY/N07_MINIO_SECRET_KEY.
+Tai khoan quan tri tu Compose dung de tao va don object tam.
+Giu nguyen PDF, user va policy hien co."""
 
 import argparse
 import io
@@ -22,6 +21,7 @@ from share_document import local_client, local_service
 
 
 def policy_snapshot(root):
+    """Doc policy hien tai cua bucket documents."""
     try:
         return json.loads(root.get_bucket_policy("documents"))
     except S3Error as error:
@@ -31,6 +31,7 @@ def policy_snapshot(root):
 
 
 def main():
+    """Doc tham so va chay cac buoc kiem thu."""
     argparse.ArgumentParser(description=__doc__).parse_args()
     access = os.environ.get("N07_MINIO_ACCESS_KEY")
     secret = os.environ.get("N07_MINIO_SECRET_KEY")
@@ -54,6 +55,7 @@ def main():
     print(f"Temporary test prefix: documents/{prefix}", flush=True)
 
     def denied(label, action):
+        """Xac nhan thao tac bi tu choi voi HTTP 403."""
         nonlocal failures
         try:
             action()
@@ -63,7 +65,7 @@ def main():
                 return
             raise ValueError("Unexpected S3 response during permission test") from None
         except MinioAdminException as error:
-            # SDK 7.2.20 exposes admin HTTP status in _code; don't print body.
+            # SDK 7.2.20 luu HTTP status quan tri tai _code; giu an body.
             if error._code == "403":
                 print(f"PASS {label}: HTTP 403", flush=True)
                 return
@@ -84,14 +86,14 @@ def main():
         denied("upload blocked", lambda: verifier.put_object(
             "documents", upload, io.BytesIO(content), len(content)))
         denied("delete blocked", lambda: verifier.remove_object("documents", fixture))
-        # Verify denied deletion really left the fixture intact.
+        # Xac nhan object tam van con sau khi lenh xoa bi tu choi.
         root.stat_object("documents", fixture)
         denied("admin user listing blocked", admin.user_list)
         if policy_snapshot(root) != before:
             raise ValueError("Documents bucket policy changed during test; inspect it")
         print("PASS documents bucket policy unchanged", flush=True)
     finally:
-        # Exact UUID keys only. Clean up even if a supposedly denied write succeeds.
+        # Don hai key UUID cua phep thu, ke ca khi lenh ghi bat ngo thanh cong.
         for name in (fixture, upload):
             root.remove_object("documents", name)
         print("Temporary test objects cleaned up; existing PDFs untouched.", flush=True)

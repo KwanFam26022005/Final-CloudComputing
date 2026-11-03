@@ -56,3 +56,9 @@ Kiểm thêm `+tcp`: mong đợi NOERROR, cờ aa và đúng bản ghi A. Đây 
 không tự trở thành IP thật của Docker container; kiểm thông mạng qua alias riêng.
 `compose.local.yml` giữ tương thích lệnh cũ, không bắt buộc. Kiểm thử EC2 riêng sau
 khi TV4 triển khai; không tự mở DNS public để hoàn thành bài lab nội bộ.
+
+## Script task6
+
+Từ gốc repo chạy `bash scripts/verify-task6.sh` hoặc `./scripts/verify-task6.ps1`.
+Nội dung: `named-checkconf`, bốn A record qua UDP/TCP và ping tám alias theo đề.
+Chuẩn bị đủ dịch vụ trước khi ping. Mỗi query phải NOERROR/aa/đúng IP để PASS.
