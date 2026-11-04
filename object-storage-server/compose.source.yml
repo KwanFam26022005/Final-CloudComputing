@@ -1,9 +1,0 @@
-# Duong dan tuong doi tinh tu docker-compose.yml tai goc repo.
-# Override tuong thich; Compose goc da co cau hinh build source nay.
-services:
-  object-storage-server:
-    image: myminicloud-minio:RELEASE.2025-10-15T17-29-55Z
-    pull_policy: build
-    build:
-      context: ./object-storage-server
-      dockerfile: Dockerfile

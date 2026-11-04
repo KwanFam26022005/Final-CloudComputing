@@ -2,3 +2,4 @@
 *
 !Dockerfile
 !.dockerignore
+!trim_console_menu.py
