@@ -1,9 +1,0 @@
-# Paths resolve relative to the first Compose file (docker-compose.yml at root).
-# Only the storage service is overridden; ports/network/data remain inherited.
-services:
-  object-storage-server:
-    image: myminicloud-minio:RELEASE.2025-10-15T17-29-55Z
-    pull_policy: never
-    build:
-      context: ./object-storage-server
-      dockerfile: Dockerfile
