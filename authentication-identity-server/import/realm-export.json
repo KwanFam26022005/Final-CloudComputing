@@ -1,7 +1,7 @@
 {
-  "realm": "realm_sv001",
+  "realm": "realm_52300107",
   "enabled": true,
-  "displayName": "MyMiniCloud Student Realm (realm_sv001)",
+  "displayName": "N07_CLoud — Hùng (52300107)",
   "sslRequired": "none",
   "registrationAllowed": false,
   "clients": [
@@ -18,7 +18,23 @@
       "webOrigins": [
         "*"
       ],
-      "protocol": "openid-connect"
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "backend-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "false",
+            "lightweight.claim": "false",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "included.custom.audience": "myapp",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
     }
   ],
   "users": [

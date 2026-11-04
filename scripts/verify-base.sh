@@ -5,6 +5,23 @@
 # =============================================================================
 set -u
 
+GF_AUTH="${GF_SECURITY_ADMIN_USER:-admin}:${GF_SECURITY_ADMIN_PASSWORD:-admin}"
+
+# In trạng thái UP/DOWN của từng target trong 1 job, dựa trên metric 'up' do Prometheus tự sinh
+check_targets() {
+  local lines
+  lines=$(curl -s -G http://localhost:9090/api/v1/query --data-urlencode "query=up{job=\"$1\"}" \
+    | grep -o '"instance":"[^"]*"[^]]*"[01]"\]' \
+    | sed -E 's/"instance":"([^"]*)".*"([01])"\]/\1 \2/')
+  if [ -z "$lines" ]; then
+    echo "  [WARN] job=$1 chua co target nao (Prometheus chua chay hoac chua scrape)."
+    return
+  fi
+  echo "$lines" | while read -r instance value; do
+    if [ "$value" = "1" ]; then echo "  [PASS] job=$1 $instance -> UP"; else echo "  [FAIL] job=$1 $instance -> DOWN"; fi
+  done
+}
+
 echo "================================================================="
 echo "   MYMINICLOUD - KIEM THU TU DONG PHAN CO BAN (5.0 DIEM)         "
 echo "================================================================="
@@ -32,9 +49,17 @@ docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 dig @dn
 echo -e "\n[7/10] Monitoring Prometheus & Node Exporter (Port 9090 & 9100)..."
 curl -s -I http://localhost:9100/metrics | head -n 1
 curl -s -I http://localhost:9090/-/healthy | head -n 1
+check_targets node
+echo -n "  So series node_cpu_seconds_total: "
+curl -s -G http://localhost:9090/api/v1/query --data-urlencode 'query=count(node_cpu_seconds_total)' \
+  | grep -o '"[0-9]*"\]' | tr -d '"]'
 
 echo -e "\n[8/10] Monitoring Grafana Dashboard (Port 3000)..."
 curl -s -I http://localhost:3000/login | head -n 1
+echo -n "  Datasource Prometheus: "
+curl -s -u "$GF_AUTH" http://localhost:3000/api/datasources/uid/prometheus/health | grep -o '"message":"[^"]*"'
+echo -n "  Dashboard: "
+curl -s -u "$GF_AUTH" "http://localhost:3000/api/search?query=Node%20Exporter%20Full" | grep -o '"title":"[^"]*"' || echo "[WARN] Chua co Node Exporter Full"
 
 echo -e "\n[9/10] API Gateway Reverse Proxy (Port 80: /, /api/hello, /auth/)..."
 curl -s -I http://localhost/ | head -n 1

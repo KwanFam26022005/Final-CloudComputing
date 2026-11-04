@@ -7,5 +7,7 @@ providers:
     type: file
     disableDeletion: false
     editable: true
+    # Cho phép bấm Save trên UI với dashboard được provisioning (yêu cầu "Lưu dashboard" của Mở rộng #8)
+    allowUiUpdates: true
     options:
       path: /etc/grafana/provisioning/dashboards

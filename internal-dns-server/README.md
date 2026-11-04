@@ -34,3 +34,25 @@ docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 sh -c '
   dig @dns-server keycloak.cloud.local +short
 '
 ```
+
+## 4. Cấu hình DNS đã tích hợp vào Compose gốc
+
+Compose gốc mount `named.conf` để include đúng options/local/zone, chạy `named -g`
+và khai báo `linux/amd64` theo image ISC đang dùng. Máy Mac ARM64 dùng giả lập;
+EC2 x86_64 dùng cùng cấu hình theo kiến trúc native. Không cần ghép override.
+
+```bash
+docker compose config -q
+docker compose up -d --no-deps internal-dns-server
+docker exec internal-dns-server named-checkconf -z /etc/bind/named.conf
+docker exec internal-dns-server named-checkzone cloud.local /etc/bind/db.cloud.local
+dig @127.0.0.1 -p 1053 web-frontend-server.cloud.local A +norecurse
+dig @127.0.0.1 -p 1053 app-backend.cloud.local A +norecurse
+dig @127.0.0.1 -p 1053 minio.cloud.local A +norecurse
+dig @127.0.0.1 -p 1053 keycloak.cloud.local A +norecurse
+```
+
+Kiểm thêm `+tcp`: mong đợi NOERROR, cờ aa và đúng bản ghi A. Đây là IP zone lab,
+không tự trở thành IP thật của Docker container; kiểm thông mạng qua alias riêng.
+`compose.local.yml` giữ tương thích lệnh cũ, không bắt buộc. Kiểm thử EC2 riêng sau
+khi TV4 triển khai; không tự mở DNS public để hoàn thành bài lab nội bộ.

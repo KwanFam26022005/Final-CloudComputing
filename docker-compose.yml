@@ -16,10 +16,10 @@ services:
   web-frontend-server:
     build:
       context: ./web-frontend-server
-      args:
-        SERVER_NODE_NAME: "web-frontend-server1 (Primary)"
     image: ${DOCKERHUB_USERNAME:-kwanfam}/myminicloud-web:${PROJECT_TAG:-dev}
     container_name: web-frontend-server
+    environment:
+      SERVER_NODE_NAME: "web-frontend-server1 (Primary)"
     ports:
       - "${WEB_PORT:-8080}:80"
     networks:
@@ -37,10 +37,10 @@ services:
   web-frontend-server2:
     build:
       context: ./web-frontend-server
-      args:
-        SERVER_NODE_NAME: "web-frontend-server2 (Replica)"
     image: ${DOCKERHUB_USERNAME:-kwanfam}/myminicloud-web:${PROJECT_TAG:-dev}
     container_name: web-frontend-server2
+    environment:
+      SERVER_NODE_NAME: "web-frontend-server2 (Replica)"
     ports:
       - "${WEB2_PORT:-8082}:80"
     networks:
@@ -106,7 +106,7 @@ services:
   authentication-identity-server:
     image: quay.io/keycloak/keycloak:latest
     container_name: authentication-identity-server
-    command: ["start-dev", "--import-realm"]
+    command: [ "start-dev", "--import-realm" ]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: "${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}"
       KC_BOOTSTRAP_ADMIN_PASSWORD: "${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin}"
@@ -114,6 +114,7 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
     volumes:
+      - keycloak_data:/opt/keycloak/data
       - ./authentication-identity-server/import:/opt/keycloak/data/import:ro
     ports:
       - "${AUTH_PORT:-8081}:8080"
@@ -129,9 +130,13 @@ services:
   # 5. OBJECT STORAGE SERVER (MinIO S3 Compatible) - [Thành viên 3]
   # ---------------------------------------------------------------------------
   object-storage-server:
-    image: minio/minio:latest
+    image: myminicloud-minio:RELEASE.2025-10-15T17-29-55Z
+    pull_policy: build
+    build:
+      context: ./object-storage-server
+      dockerfile: Dockerfile
     container_name: object-storage-server
-    command: ["server", "/data", "--console-address", ":9001"]
+    command: [ "server", "/data", "--console-address", ":9001" ]
     environment:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-minioadmin}"
@@ -153,11 +158,14 @@ services:
   # ---------------------------------------------------------------------------
   internal-dns-server:
     image: internetsystemsconsortium/bind9:9.18
+    platform: linux/amd64
+    command: ["-g", "-c", "/etc/bind/named.conf"]
     container_name: internal-dns-server
     ports:
       - "${DNS_PORT:-1053}:53/udp"
       - "${DNS_PORT:-1053}:53/tcp"
     volumes:
+      - ./internal-dns-server/named.conf:/etc/bind/named.conf:ro
       - ./internal-dns-server/named.conf.options:/etc/bind/named.conf.options:ro
       - ./internal-dns-server/named.conf.local:/etc/bind/named.conf.local:ro
       - ./internal-dns-server/db.cloud.local:/etc/bind/db.cloud.local:ro
@@ -243,3 +251,8 @@ services:
           - proxy
           - gateway
     restart: unless-stopped
+
+# Managed on new machines; reuse the existing lab volume by its stable name.
+volumes:
+  keycloak_data:
+    name: n07-keycloak-data

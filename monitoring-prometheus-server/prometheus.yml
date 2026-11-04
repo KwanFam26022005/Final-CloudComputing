@@ -14,6 +14,14 @@ scrape_configs:
   # 2. MỞ RỘNG #7 (0.5 điểm): Giám sát trực tiếp web-frontend-server
   # (Endpoint /metrics đã được cấu hình sẵn trong web-frontend-server/conf.default)
   # ===========================================================================
+  # Giám sát cả 2 node đang được Load Balancing Round Robin (Mở rộng #10)
   - job_name: 'web'
     static_configs:
-      - targets: ['web-frontend-server:80']
+      - targets: ['web-frontend-server:80', 'web-frontend-server2:80']
+
+  # ===========================================================================
+  # 3. Prometheus tự giám sát chính nó (localhost = chính container Prometheus)
+  # ===========================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
