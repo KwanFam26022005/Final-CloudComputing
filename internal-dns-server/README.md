@@ -26,13 +26,11 @@ dig @127.0.0.1 -p 1053 app-backend.cloud.local +short
 dig @127.0.0.1 -p 1053 minio.cloud.local +short
 dig @127.0.0.1 -p 1053 keycloak.cloud.local +short
 
-# Cách 2: Chạy qua Docker container trong mạng cloud-net (Chạy tốt trên cả Windows PowerShell)
-docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 sh -c '
-  dig @dns-server web-frontend-server.cloud.local +short
-  dig @dns-server app-backend.cloud.local +short
-  dig @dns-server minio.cloud.local +short
-  dig @dns-server keycloak.cloud.local +short
-'
+# Cách 2: Dùng container DNS đang chạy, dùng được cả trong PowerShell
+docker exec internal-dns-server dig "@127.0.0.1" web-frontend-server.cloud.local +short
+docker exec internal-dns-server dig "@127.0.0.1" app-backend.cloud.local +short
+docker exec internal-dns-server dig "@127.0.0.1" minio.cloud.local +short
+docker exec internal-dns-server dig "@127.0.0.1" keycloak.cloud.local +short
 ```
 
 ## 4. Cấu hình DNS đã tích hợp vào Compose gốc
@@ -54,11 +52,21 @@ dig @127.0.0.1 -p 1053 keycloak.cloud.local A +norecurse
 
 Kiểm thêm `+tcp`: mong đợi NOERROR, cờ aa và đúng bản ghi A. Đây là IP zone lab,
 không tự trở thành IP thật của Docker container; kiểm thông mạng qua alias riêng.
-`compose.local.yml` giữ tương thích lệnh cũ, không bắt buộc. Kiểm thử EC2 riêng sau
-khi TV4 triển khai; không tự mở DNS public để hoàn thành bài lab nội bộ.
+Kiểm thử EC2 riêng sau khi TV4 triển khai; không tự mở DNS public để hoàn thành
+bài lab nội bộ. Override cũ đã bỏ vì Compose gốc chứa đủ cấu hình.
 
 ## Script task6
 
 Từ gốc repo chạy `bash scripts/verify-task6.sh` hoặc `./scripts/verify-task6.ps1`.
 Nội dung: `named-checkconf`, bốn A record qua UDP/TCP và ping tám alias theo đề.
 Chuẩn bị đủ dịch vụ trước khi ping. Mỗi query phải NOERROR/aa/đúng IP để PASS.
+
+## Demo và tác dụng
+
+Chạy task6 hoặc các lệnh dig ở trên, trình bày web=10.10.10.10, app=10.10.10.20,
+minio=10.10.10.30, keycloak=10.10.10.40; kiểm cả UDP và TCP. Ping alias trong
+cloud-net kiểm thông mạng riêng. Tác dụng: phân giải tên dễ nhớ trong mạng nội bộ.
+
+Hai bản ghi .30/.40 là lựa chọn cấu hình nhóm, đề không ấn định hai IP này. Kết quả
+Bind9 không chứng minh các IP zone là IP Docker thật; ping alias của Docker cũng
+không thay bằng chứng đã hỏi Bind9. Không thêm DNS cải tiến khác ngoài phạm vi đề.

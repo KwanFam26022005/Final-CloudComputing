@@ -1,9 +1,0 @@
-# Ghep voi Compose goc; duong dan tuong doi tinh tu goc repo.
-services:
-  internal-dns-server:
-    # Image ISC 9.18 dung linux/amd64; Docker Desktop gia lap tren ARM.
-    platform: linux/amd64
-    # Chay server o foreground va gui log ra stdout/stderr cua Docker.
-    command: ["-g", "-c", "/etc/bind/named.conf"]
-    volumes:
-      - ./internal-dns-server/named.conf:/etc/bind/named.conf:ro
