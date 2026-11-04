@@ -1,9 +1,0 @@
-# Merge with the root Compose file; all relative paths resolve from repo root.
-services:
-  internal-dns-server:
-    # The verified ISC 9.18 image is linux/amd64; Docker Desktop emulates it on ARM.
-    platform: linux/amd64
-    # Keep the server in the foreground and send logs to Docker stdout/stderr.
-    command: ["-g", "-c", "/etc/bind/named.conf"]
-    volumes:
-      - ./internal-dns-server/named.conf:/etc/bind/named.conf:ro

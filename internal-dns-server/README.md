@@ -26,40 +26,22 @@ dig @127.0.0.1 -p 1053 app-backend.cloud.local +short
 dig @127.0.0.1 -p 1053 minio.cloud.local +short
 dig @127.0.0.1 -p 1053 keycloak.cloud.local +short
 
-# Cách 2: Chạy qua Docker container trong mạng cloud-net (Chạy tốt trên cả Windows PowerShell)
-docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 sh -c '
-  dig @dns-server web-frontend-server.cloud.local +short
-  dig @dns-server app-backend.cloud.local +short
-  dig @dns-server minio.cloud.local +short
-  dig @dns-server keycloak.cloud.local +short
-'
+# Cách 2: Dùng container DNS đang chạy, dùng được cả trong PowerShell
+docker exec internal-dns-server dig "@127.0.0.1" web-frontend-server.cloud.local +short
+docker exec internal-dns-server dig "@127.0.0.1" app-backend.cloud.local +short
+docker exec internal-dns-server dig "@127.0.0.1" minio.cloud.local +short
+docker exec internal-dns-server dig "@127.0.0.1" keycloak.cloud.local +short
 ```
 
-## 4. Cấu hình local đã đối chiếu với image ISC
+## 4. Cấu hình DNS đã tích hợp vào Compose gốc
 
-Ngày 27/10/2026, image `internetsystemsconsortium/bind9:9.18` đã chạy được trên
-Docker Desktop nhưng trả REFUSED cho zone lab. Kiểm tra thực tế cho thấy
-`/etc/bind/named.conf` mặc định trong image không include các file options/local
-đang được mount từ dự án. `named-checkzone` hợp lệ riêng chưa chứng minh server
-đang phục vụ zone đó.
-
-Module bổ sung `named.conf` để include hai file cấu hình của dự án và
-`compose.local.yml` để mount đúng entry point, đưa log ra Docker, khai báo
-`linux/amd64` đúng metadata image hiện có. Mac ARM64 chạy image qua giả lập;
-đây là biện pháp tương thích lab, không phải bản image ARM64 native.
-Không sửa Compose chung hoặc IP zone để xử lý lỗi include.
-
-Chạy từ thư mục gốc repository:
+Compose gốc mount `named.conf` để include đúng options/local/zone, chạy `named -g`
+và khai báo `linux/amd64` theo image ISC đang dùng. Máy Mac ARM64 dùng giả lập;
+EC2 x86_64 dùng cùng cấu hình theo kiến trúc native. Không cần ghép override.
 
 ```bash
-docker compose -f docker-compose.yml -f internal-dns-server/compose.local.yml config -q
-docker compose -f docker-compose.yml -f internal-dns-server/compose.local.yml up -d --no-deps internal-dns-server
-docker compose -f docker-compose.yml -f internal-dns-server/compose.local.yml ps internal-dns-server
-```
-
-Sau khi service chạy, kiểm tra config/zone và query:
-
-```bash
+docker compose config -q
+docker compose up -d --no-deps internal-dns-server
 docker exec internal-dns-server named-checkconf -z /etc/bind/named.conf
 docker exec internal-dns-server named-checkzone cloud.local /etc/bind/db.cloud.local
 dig @127.0.0.1 -p 1053 web-frontend-server.cloud.local A +norecurse
@@ -68,11 +50,23 @@ dig @127.0.0.1 -p 1053 minio.cloud.local A +norecurse
 dig @127.0.0.1 -p 1053 keycloak.cloud.local A +norecurse
 ```
 
-Chỉ nghiệm thu khi query trả NOERROR, authoritative answer và đúng IP từng record.
-Thử thêm `+tcp` để kiểm tra cổng TCP. IP trong zone là dữ liệu lab; kiểm tra kết
-nối đến service thật qua Docker aliases là phép kiểm tra riêng.
-Mac có thể nhắc `.local` dành cho mDNS; bài lab giữ `cloud.local` theo đề và các
-lệnh trên chỉ định rõ DNS server/cổng để tránh nhầm resolver.
+Kiểm thêm `+tcp`: mong đợi NOERROR, cờ aa và đúng bản ghi A. Đây là IP zone lab,
+không tự trở thành IP thật của Docker container; kiểm thông mạng qua alias riêng.
+Kiểm thử EC2 riêng sau khi TV4 triển khai; không tự mở DNS public để hoàn thành
+bài lab nội bộ. Override cũ đã bỏ vì Compose gốc chứa đủ cấu hình.
 
-Khi quản lý DNS theo cấu hình này, dùng cả hai file Compose. Duy sẽ điều phối việc
-tích hợp cấu hình chính vào Compose chung ở giai đoạn bàn giao.
+## Script task6
+
+Từ gốc repo chạy `bash scripts/verify-task6.sh` hoặc `./scripts/verify-task6.ps1`.
+Nội dung: `named-checkconf`, bốn A record qua UDP/TCP và ping tám alias theo đề.
+Chuẩn bị đủ dịch vụ trước khi ping. Mỗi query phải NOERROR/aa/đúng IP để PASS.
+
+## Demo và tác dụng
+
+Chạy task6 hoặc các lệnh dig ở trên, trình bày web=10.10.10.10, app=10.10.10.20,
+minio=10.10.10.30, keycloak=10.10.10.40; kiểm cả UDP và TCP. Ping alias trong
+cloud-net kiểm thông mạng riêng. Tác dụng: phân giải tên dễ nhớ trong mạng nội bộ.
+
+Hai bản ghi .30/.40 là lựa chọn cấu hình nhóm, đề không ấn định hai IP này. Kết quả
+Bind9 không chứng minh các IP zone là IP Docker thật; ping alias của Docker cũng
+không thay bằng chứng đã hỏi Bind9. Không thêm DNS cải tiến khác ngoài phạm vi đề.
