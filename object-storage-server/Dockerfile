@@ -11,9 +11,23 @@ WORKDIR /src/minio
 # Gioi han tai nguyen bien dich theo Docker VM local.
 ENV CGO_ENABLED=0 GOMAXPROCS=2 GOTOOLCHAIN=local
 RUN go mod download
+# Khoi phuc Console quan tri chinh thuc, giu nguyen source server hien tai.
+# Ban Console moi chi con Object Browser, khong co trinh sua bucket policy.
+RUN go mod edit -require=github.com/minio/console@v1.7.6 \
+    && go mod tidy \
+    && test "$(go list -m -f '{{.Version}}' github.com/minio/console)" = "v1.7.6"
+COPY trim_console_menu.py /tmp/trim_console_menu.py
+# Chi sua ban copy cua Console, giu nguyen module cache da xac minh checksum.
+RUN apk add --no-cache python3 \
+    && cp -a /go/pkg/mod/github.com/minio/console@v1.7.6 /src/console \
+    && chmod -R u+w /src/console \
+    && python3 /tmp/trim_console_menu.py /src/console \
+    && go mod edit -replace=github.com/minio/console=/src/console \
+    && go mod tidy
 ARG TARGETOS
 ARG TARGETARCH
 RUN mkdir -p /out \
+    && cp /go/pkg/mod/github.com/minio/console@v1.7.6/LICENSE /out/CONSOLE-LICENSE \
     && MINIO_RELEASE=RELEASE go run buildscripts/gen-ldflags.go \
         2025-10-15T17:29:55Z > /tmp/minio-ldflags \
     && GOOS="$TARGETOS" GOARCH="$TARGETARCH" go build -mod=readonly -p 1 -tags kqueue -trimpath \
@@ -24,11 +38,14 @@ FROM alpine:3.22@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52
 LABEL org.opencontainers.image.title="N07_CLoud MinIO lab source build" \
       org.opencontainers.image.source="https://github.com/minio/minio" \
       org.opencontainers.image.version="RELEASE.2025-10-15T17-29-55Z" \
-      org.opencontainers.image.licenses="AGPL-3.0-only"
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      vn.n07.minio.console.version="v1.7.6" \
+      vn.n07.minio.console.menu="storage-demo"
 
 COPY --from=build /out/minio /usr/local/bin/minio
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /src/minio/LICENSE /src/minio/CREDITS /usr/share/licenses/minio/
+COPY --from=build /out/CONSOLE-LICENSE /usr/share/licenses/minio/CONSOLE-LICENSE
 
 # Kiem tra binary tren kien truc dich sau giai doan bien dich.
 RUN /usr/local/bin/minio --version
