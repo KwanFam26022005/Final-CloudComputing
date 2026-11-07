@@ -90,3 +90,59 @@ sửa trong module này; không nhận SSO/browser login đã hoàn tất từ `
 Demo trên máy local không thay bằng chứng EC2. Named volume lưu dữ liệu đang
 chạy, không phải hệ thống backup/HA; các công cụ di chuyển snapshot của lần
 chuyển dữ liệu cũ đã được bỏ khỏi gói triển khai hiện tại.
+
+## 6. Truy cập trực tiếp trên local và EC2
+
+Compose lab không đặt `KC_HOSTNAME`, giữ `KC_HOSTNAME_STRICT=false` và
+`KC_HTTP_ENABLED=true`. Keycloak tạo URL theo địa chỉ request: mở
+`http://localhost:8081` trên local hoặc `http://<PUBLIC_IP>:8081` trên EC2.
+Không cần ghi IP thật vào source. Biến `KC_HOSTNAME` trong `.env` cũ không còn
+được Compose này truyền vào container. Muốn dùng hostname cố định khi triển khai
+HTTPS, cần khai báo lại nó trong environment của service Auth.
+
+Khi cập nhật container đang chạy, kiểm tra mount dữ liệu trước:
+
+```bash
+docker inspect authentication-identity-server --format '{{range .Mounts}}{{if eq .Destination "/opt/keycloak/data"}}type={{.Type}} name={{.Name}} rw={{.RW}}{{end}}{{end}}'
+```
+
+Chỉ tiếp tục khi đúng volume dữ liệu đang dùng (`n07-keycloak-data`, RW). Từ gốc
+repo, tạo lại riêng Auth, giữ image và volume; có gián đoạn đăng nhập ngắn:
+
+```bash
+docker compose up -d --no-deps --no-build --pull never --force-recreate authentication-identity-server
+```
+
+Kiểm tra `Location` khi gọi `/` bằng địa chỉ truy cập thực tế, sau đó mở Console
+và đăng nhập. HTTP302 đúng địa chỉ chưa chứng minh đăng nhập hoặc `/secure` đạt.
+
+### Phân biệt hostname với lỗi “HTTPS required”
+
+`KC_HTTP_ENABLED=true` mở HTTP listener; **Require SSL** của mỗi realm là chính
+sách riêng. File import chỉ cấu hình `realm_52300107` với `sslRequired=none`;
+nó không đổi chính sách realm quản trị `master`, và không ghi đè realm đã có.
+
+Nếu `master` dùng **External requests**, truy cập HTTP qua Public IP có thể bị
+chặn. Để vào Console kiểm tra, chạy SSH tunnel trên máy cá nhân (thay key/IP bằng
+thông tin của môi trường, giữ terminal mở):
+
+```bash
+ssh -i /path/to/key.pem -o ExitOnForwardFailure=yes -N -L 127.0.0.1:18081:127.0.0.1:8081 ubuntu@<PUBLIC_IP>
+```
+
+Mở `http://localhost:18081/admin/`, chọn realm `master` → **Realm settings →
+General → Require SSL**. Chỉ khi demo HTTP public tạm thời của lab mới chọn
+**None → Save**, tải lại để xác nhận rồi thử đăng nhập public trong cửa sổ ẩn
+danh. Thiết lập đã lưu nằm trong dữ liệu Keycloak, được giữ qua restart/recreate
+khi giữ volume; máy mới với dữ liệu mới cần cấu hình lại. Commit này không tự
+động tắt SSL của `master` khi startup.
+
+`None` cho phép truyền mật khẩu/token qua HTTP public không có mã hóa TLS.
+Triển khai lâu dài cần HTTPS, hostname cố định và chính sách SSL phù hợp; chế độ
+hostname động của lab tin cậy Host header nên cần giới hạn nguồn truy cập.
+Kiểm thử token và App phải dùng issuer nhất quán; proxy `/auth/` cần phối hợp
+thành viên 1, kiểm issuer/audience phía App thuộc thành viên 2.
+
+Tham khảo: [Hostname](https://www.keycloak.org/server/hostname),
+[SSL theo realm](https://www.keycloak.org/docs/26.4.7/server_admin/index.html),
+[Import realm](https://www.keycloak.org/server/importExport).
