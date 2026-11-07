@@ -110,7 +110,7 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: "${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}"
       KC_BOOTSTRAP_ADMIN_PASSWORD: "${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin}"
-      KC_HOSTNAME: "${KC_HOSTNAME:-localhost}"
+      # Lab: derive URLs from the request host for localhost and EC2 access.
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
     volumes:
