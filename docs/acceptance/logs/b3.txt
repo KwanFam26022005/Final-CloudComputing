@@ -1,0 +1,4 @@
+# b3 | Local | 2026-11-10 15:42:36
+id	title	created_at
+1	Hello from MariaDB!	2026-11-10 08:19:22
+

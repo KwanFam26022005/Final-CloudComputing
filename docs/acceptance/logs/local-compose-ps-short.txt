@@ -1,0 +1,13 @@
+NAME                                  IMAGE                                            STATUS
+api-gateway-proxy-server              nginx:stable                                     Up 7 minutes
+application-backend-server            kwanfam/myminicloud-app:dev                      Up 7 minutes
+authentication-identity-server        quay.io/keycloak/keycloak:latest                 Up 7 minutes
+internal-dns-server                   internetsystemsconsortium/bind9:9.18             Up 7 minutes
+monitoring-grafana-dashboard-server   grafana/grafana:13.3.0                           Up 7 minutes
+monitoring-node-exporter-server       prom/node-exporter:v1.12.1                       Up 7 minutes
+monitoring-prometheus-server          prom/prometheus:v3.15.1                          Up 7 minutes
+object-storage-server                 myminicloud-minio:RELEASE.2025-10-15T17-29-55Z   Up 7 minutes (healthy)
+relational-database-server            mariadb:11                                       Up 7 minutes
+web-frontend-server                   kwanfam/myminicloud-web:dev                      Up 7 minutes
+web-frontend-server2                  kwanfam/myminicloud-web:dev                      Up 7 minutes
+2026-11-10 15:55:11

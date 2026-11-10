@@ -1,0 +1,2 @@
+users: ['sv01', 'sv02']
+flask-app: publicClient=True directAccessGrantsEnabled=True standardFlow=True

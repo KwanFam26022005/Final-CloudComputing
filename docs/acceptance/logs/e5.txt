@@ -1,0 +1,39 @@
+# e5 | Local | 2026-11-10 15:45:01
+avatar anonymous: HTTP 200 type=image/jpeg
+documents PDF anonymous (expected 403): HTTP 403
+
+=================================================================
+  TASK 5 | STORAGE / MINIO | HUNG 52300107
+=================================================================
+
+[PHAN 1] Docker / MinIO / SDK
+
+[PHAN 2] Demo HTML / Avatar / PDF / Link ky
+
+--- HTML: demo/index.html ---
+PASS demo/index.html: authenticated bytes match local source
+
+--- AVATAR: profile-pics/avatar.jpg ---
+PASS avatar: JPEG metadata/bytes; anonymous 200; bytes match
+
+--- PDF: documents / quyen truy cap / link ky ---
+Found 1 PDF object(s) in documents
+
+CHECK PDF 'bao-cao-nhap.pdf'
+PASS unsigned GET: HTTP 403
+PASS signed GET: HTTP 200; PDF bytes match
+PASS tampered signature: HTTP 403
+Validity configured: 5 minute(s); expiry after waiting NOT TESTED.
+No objects or policies changed. No credentials or links saved.
+PASS PDF 'bao-cao-nhap.pdf'
+
+PDF SUMMARY: 1/1 passed
+RESULT: PASS; 0 failed group(s)
+Read-only checks. Real report content, expiry waiting, Console UI and EC2 not tested.
+[UI] Tao bucket, upload/download tren Console; xac nhan PDF la bao cao that.
+
+[PHAN 3] Cai tien tai khoan chi doc
+[NOT RUN] Them -ReadOnly va credential de kiem quyen read-only.
+
+SUMMARY TASK5: FAIL=0
+

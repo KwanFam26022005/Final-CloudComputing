@@ -1,0 +1,7 @@
+# e7 | Local | 2026-11-10 15:44:46
+# HELP web_frontend_up Trang thai hoat dong cua Web Frontend Server
+# TYPE web_frontend_up gauge
+web_frontend_up{node="web-frontend-server1 (Primary)"} 1
+--- up{job=web}
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"up","instance":"web-frontend-server:80","job":"web"},"value":[1794300286.716,"1"]},{"metric":{"__name__":"up","instance":"web-frontend-server2:80","job":"web"},"value":[1794300286.716,"1"]}]}}
+

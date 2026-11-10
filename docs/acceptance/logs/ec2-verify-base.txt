@@ -1,0 +1,123 @@
+=================================================================
+   MYMINICLOUD - KIEM THU TU DONG PHAN CO BAN (5.0 DIEM)         
+=================================================================
+
+[1/10] Web Frontend Server (Port 8080)...
+  [PASS] Web Home (/) -> HTTP 200 (http://localhost:8080/)
+  [PASS] Web Blog (/blog/) -> HTTP 200 (http://localhost:8080/blog/)
+
+[2/10] Application Backend Server (/hello)...
+  [PASS] App Direct (8085/hello) -> HTTP 200, co 'Hello from App Server!' (http://localhost:8085/hello)
+  [PASS] App via Proxy (/api/hello) -> HTTP 200, co 'Hello from App Server!' (http://localhost/api/hello)
+
+[3/10] Relational Database Server (MariaDB minicloud.notes)...
+id	title	created_at
+1	Hello from MariaDB!	2026-11-10 09:22:01
+  [PASS] minicloud.notes co 'Hello from MariaDB!'
+
+[4/10] Authentication Identity Server (Keycloak Port 8081)...
+  [PASS] Keycloak Console -> HTTP 200 (http://localhost:8081/)
+[UI] Dang nhap Keycloak, kiem realm_52300107 / sv01 / sv02 / flask-app.
+
+[5/10] Object Storage Server (MinIO Console Port 9001)...
+  [PASS] MinIO Console -> HTTP 200 (http://localhost:9001/)
+[UI] MinIO Console: tao demo, upload index.html va tai lai de doi chieu.
+
+[6/10] Internal DNS Server (Bind9 - web-frontend-server.cloud.local)...
+10.10.10.10
+  [PASS] web-frontend-server.cloud.local -> 10.10.10.10
+
+[7/10] Monitoring Prometheus & Node Exporter (Port 9090 & 9100)...
+  [PASS] Node Exporter Metrics -> HTTP 200 (http://localhost:9100/metrics)
+  [PASS] Prometheus Health -> HTTP 200 (http://localhost:9090/-/healthy)
+  [PASS] job=node monitoring-node-exporter-server:9100 -> UP
+  [PASS] node_cpu_seconds_total co 16 series.
+
+[8/10] Monitoring Grafana Dashboard (Port 3000)...
+  [PASS] Grafana UI -> HTTP 200 (http://localhost:3000/login)
+  [PASS] Datasource Prometheus -> "message":"Successfully queried the Prometheus API."
+  [PASS] Dashboard "title":"Node Exporter Full" da co san.
+
+[9/10] API Gateway Reverse Proxy (Port 80: /, /api/hello, /auth/)...
+  [PASS] Gateway Web (/) -> HTTP 200 (http://localhost/)
+  [PASS] Gateway API (/api/hello) -> HTTP 200, co 'Hello from App Server!' (http://localhost/api/hello)
+  [PASS] Gateway Auth (/auth/) -> HTTP 302, Location: http://localhost/admin/
+
+[10/10] Kiem tra thong mang noi bo (Ping tren cloud-net)...
+--- Ping web ---
+PING web (172.18.0.7): 56 data bytes
+64 bytes from 172.18.0.7: seq=0 ttl=64 time=0.120 ms
+64 bytes from 172.18.0.7: seq=1 ttl=64 time=0.082 ms
+
+--- web ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.082/0.101/0.120 ms
+  [PASS] ping web
+--- Ping app-server ---
+PING app-server (172.18.0.9): 56 data bytes
+64 bytes from 172.18.0.9: seq=0 ttl=64 time=0.106 ms
+64 bytes from 172.18.0.9: seq=1 ttl=64 time=0.077 ms
+
+--- app-server ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.077/0.091/0.106 ms
+  [PASS] ping app-server
+--- Ping db ---
+PING db (172.18.0.5): 56 data bytes
+64 bytes from 172.18.0.5: seq=0 ttl=64 time=0.151 ms
+64 bytes from 172.18.0.5: seq=1 ttl=64 time=0.083 ms
+
+--- db ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.083/0.117/0.151 ms
+  [PASS] ping db
+--- Ping keycloak ---
+PING keycloak (172.18.0.2): 56 data bytes
+64 bytes from 172.18.0.2: seq=0 ttl=64 time=0.110 ms
+64 bytes from 172.18.0.2: seq=1 ttl=64 time=0.101 ms
+
+--- keycloak ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.101/0.105/0.110 ms
+  [PASS] ping keycloak
+--- Ping minio ---
+PING minio (172.18.0.3): 56 data bytes
+64 bytes from 172.18.0.3: seq=0 ttl=64 time=0.033 ms
+64 bytes from 172.18.0.3: seq=1 ttl=64 time=0.068 ms
+
+--- minio ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.033/0.050/0.068 ms
+  [PASS] ping minio
+--- Ping prometheus ---
+PING prometheus (172.18.0.10): 56 data bytes
+64 bytes from 172.18.0.10: seq=0 ttl=64 time=0.121 ms
+64 bytes from 172.18.0.10: seq=1 ttl=64 time=0.081 ms
+
+--- prometheus ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.081/0.101/0.121 ms
+  [PASS] ping prometheus
+--- Ping grafana ---
+PING grafana (172.18.0.12): 56 data bytes
+64 bytes from 172.18.0.12: seq=0 ttl=64 time=0.133 ms
+64 bytes from 172.18.0.12: seq=1 ttl=64 time=0.082 ms
+
+--- grafana ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.082/0.107/0.133 ms
+  [PASS] ping grafana
+--- Ping dns-server ---
+PING dns-server (172.18.0.4): 56 data bytes
+64 bytes from 172.18.0.4: seq=0 ttl=64 time=0.147 ms
+64 bytes from 172.18.0.4: seq=1 ttl=64 time=0.082 ms
+
+--- dns-server ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.082/0.114/0.147 ms
+  [PASS] ping dns-server
+
+=================================================================
+   HOAN TAT KIEM THU PHAN CO BAN!                                
+=================================================================
+SUMMARY: PASS=26 FAIL=0

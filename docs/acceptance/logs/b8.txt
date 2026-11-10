@@ -1,0 +1,4 @@
+# b8 | Local | 2026-11-10 15:44:20
+{"details":{"application":"Prometheus","features":{"rulerApiEnabled":false}},"message":"Successfully queried the Prometheus API.","status":"OK"}
+Node Exporter Full uid=rYdddlPWk
+

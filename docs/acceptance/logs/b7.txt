@@ -1,0 +1,8 @@
+# b7 | Local | 2026-11-10 15:44:19
+node http://monitoring-node-exporter-server:9100/metrics health=up
+prometheus http://localhost:9090/metrics health=up
+web http://web-frontend-server:80/metrics health=up
+web http://web-frontend-server2:80/metrics health=up
+--- query node_cpu_seconds_total
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{},"value":[1794300260.184,"64"]}]}}
+

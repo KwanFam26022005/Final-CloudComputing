@@ -1,0 +1,29 @@
+%% Nguon Mermaid cho kien-truc-tong-the.png (PNG thuc te ve bang Pillow vi khong chay duoc npx mermaid-cli)
+flowchart LR
+  client([Client / Trinh duyet])
+  subgraph net["Docker network: cloud-net - 11 container"]
+    gw["api-gateway-proxy-server<br/>Nginx :80 (host 80)<br/>alias: proxy, gateway"]
+    w1["web-frontend-server<br/>Nginx (host 8080)<br/>web-frontend-server1 (Primary)"]
+    w2["web-frontend-server2<br/>Nginx (host 8082)<br/>web-frontend-server2 (Replica)"]
+    app["application-backend-server<br/>Flask :8081 (host 8085)<br/>alias: app, app-backend"]
+    db[("relational-database-server<br/>MariaDB 11 :3306<br/>volume mariadb_data")]
+    kc["authentication-identity-server<br/>Keycloak (host 8081)<br/>realm_52300107"]
+    minio["object-storage-server<br/>MinIO :9000 / console :9001"]
+    dns["internal-dns-server<br/>Bind9 (host 1053)<br/>zone cloud.local"]
+    ne["monitoring-node-exporter-server<br/>:9100"]
+    prom["monitoring-prometheus-server<br/>:9090"]
+    gf["monitoring-grafana-dashboard-server<br/>:3000"]
+  end
+  client -->|":80"| gw
+  gw -->|"/ (Round Robin)"| w1
+  gw -->|"/ (Round Robin)"| w2
+  gw -->|"/api/*, /student/"| app
+  gw -->|"/auth/"| kc
+  app -->|SQL| db
+  app -->|"JWKS"| kc
+  prom -->|"scrape /metrics"| ne
+  prom -->|"scrape /metrics"| w1
+  prom -->|"scrape /metrics"| w2
+  gf -->|datasource| prom
+  client -.->|"9000 / 9001"| minio
+  client -.->|"1053"| dns

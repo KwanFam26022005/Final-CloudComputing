@@ -1,0 +1,8 @@
+# b6 | Local | 2026-11-10 15:42:36
+*** UnKnown can't find web-frontend-server.cloud.local: No response from server
+
+Server:  UnKnown
+Address:  127.0.0.1
+
+10.10.10.10
+

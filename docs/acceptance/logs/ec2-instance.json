@@ -1,0 +1,34 @@
+{
+    "Id": "i-09b1a1559442a57b3",
+    "State": "running",
+    "Type": "c7i-flex.large",
+    "PublicIP": "13.229.212.14",
+    "AMI": "ami-063d94c44d4eba6e0",
+    "Key": "52300119-Lab06",
+    "SecurityGroups": [
+        {
+            "GroupId": "sg-07b75f90eaaf94db1",
+            "GroupName": "myminicloud-final-20261110"
+        }
+    ],
+    "Metadata": {
+        "State": "applied",
+        "HttpTokens": "required",
+        "HttpPutResponseHopLimit": 2,
+        "HttpEndpoint": "enabled",
+        "HttpProtocolIpv6": "disabled",
+        "InstanceMetadataTags": "disabled"
+    },
+    "Devices": [
+        {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+                "AttachTime": "2026-11-10T09:19:09+00:00",
+                "DeleteOnTermination": true,
+                "Status": "attached",
+                "VolumeId": "vol-0486c05490dddec5f",
+                "EbsCardIndex": 0
+            }
+        }
+    ]
+}

@@ -1,0 +1,19 @@
+Realm: realm_52300107
+API: http://13.229.212.14/api/secure
+
+--- Tu choi token thieu / sai dinh dang ---
+PASS missing token: HTTP 401 (expected 401)
+PASS malformed token: HTTP 401 (expected 401)
+
+--- Tai khoan sv01 ---
+PASS sv01: HTTP 200; identity matches=True
+
+--- Tu choi chu ky bi sua ---
+PASS tampered signature: HTTP 401 (expected 401)
+
+--- Tai khoan sv02 ---
+PASS sv02: HTTP 200; identity matches=True
+
+API SUMMARY: 5/5 PASS
+Tokens/passwords were not printed or saved to files.
+Wrong issuer/audience, expiry and browser login redirects are not covered by this test.

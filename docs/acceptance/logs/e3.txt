@@ -1,0 +1,111 @@
+# e3 | Local | 2026-11-10 15:44:21
+Field	Type	Null	Key	Default	Extra
+id	int(11)	NO	PRI	NULL	auto_increment
+student_id	varchar(10)	NO	UNI	NULL	
+fullname	varchar(100)	NO		NULL	
+dob	date	NO		NULL	
+major	varchar(50)	NO		NULL	
+id	student_id	fullname	dob	major
+1	SV001	Nguyen Van A (Member 1)	2005-02-26	Cloud Computing
+2	SV002	Tran Thi B (Member 2)	2005-05-14	Software Engineering
+3	SV003	Le Van C (Member 3)	2005-08-20	Cyber Security
+4	SV004	Pham Thi D (Member 4)	2005-11-10	Data Science
+--- CRUD
+THAO TÁC CRUD
+>>> BƯỚC 1: TRUY VẤN DANH SÁCH SINH VIÊN HIỆN CÓ (READ BAN ĐẦU)
+id	student_id	fullname	dob	major
+1	SV001	Nguyen Van A (Member 1)	2005-02-26	Cloud Computing
+2	SV002	Tran Thi B (Member 2)	2005-05-14	Software Engineering
+3	SV003	Le Van C (Member 3)	2005-08-20	Cyber Security
+4	SV004	Pham Thi D (Member 4)	2005-11-10	Data Science
+THAO TÁC CRUD
+>>> BƯỚC 2: THÊM MỚI SINH VIÊN SV005 (CREATE / INSERT)
+id	student_id	fullname	dob	major
+6	SV005	Hoang Minh E	2005-03-19	Information Systems
+THAO TÁC CRUD
+>>> BƯỚC 3: CẬP NHẬT CHUYÊN NGÀNH CỦA SV005 (UPDATE)
+id	student_id	fullname	dob	major
+6	SV005	Hoang Minh E (Updated)	2005-03-19	Cloud Computing & DevOps
+THAO TÁC CRUD
+>>> BƯỚC 4: XÓA SINH VIÊN SV005 KHỎI HỆ THỐNG (DELETE)
+THAO TÁC CRUD
+>>> TRẠNG THÁI CUỐI CÙNG SAU KHI THỰC HIỆN TRỌN BỘ CRUD
+id	student_id	fullname	dob	major
+1	SV001	Nguyen Van A (Member 1)	2005-02-26	Cloud Computing
+2	SV002	Tran Thi B (Member 2)	2005-05-14	Software Engineering
+3	SV003	Le Van C (Member 3)	2005-08-20	Cyber Security
+4	SV004	Pham Thi D (Member 4)	2005-11-10	Data Science
+--- API
+{"count":4,"source":"MariaDB (studentdb.students)","students":[{"dob":"2005-02-26","fullname":"Nguyen Van A (Member 1)","id":1,"major":"Cloud Computing","student_id":"SV001"},{"dob":"2005-05-14","fullname":"Tran Thi B (Member 2)","id":2,"major":"Software Engineering","student_id":"SV002"},{"dob":"2005-08-20","fullname":"Le Van C (Member 3)","id":3,"major":"Cyber Security","student_id":"SV003"},{"dob":"2005-11-10","fullname":"Pham Thi D (Member 4)","id":4,"major":"Data Science","student_id":"SV004"}]}
+--- verify-task2
+=================================================================
+   KIEM THU TU DONG TASK 2: BACKEND & DATA LEAD (2.0 DIEM)       
+=================================================================
+
+[PHAN 1] Chay bo Unit Tests cua Flask Backend Server...
+test_health_and_hello (test_app.AppServerTestCase) ... ok
+test_secure_missing_and_valid_token (test_app.AppServerTestCase) ... ok
+test_student_json_from_any_cwd (test_app.AppServerTestCase) ... ok
+test_students_db_get (test_app.AppServerTestCase) ... ok
+test_students_db_post_validation_and_conflict (test_app.AppServerTestCase) ... ok
+test_students_db_put_and_delete_not_found_and_success (test_app.AppServerTestCase) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.038s
+
+OK
+[PASS] Tat ca cac ca kiem thu Unit Tests deu THANH CONG!
+
+[PHAN 2] Kiem tra cu phap docker compose...
+[PASS] File docker-compose.yml hop le 100%!
+
+[PHAN 3] Kiem tra trang thai container cua Task 2...
+[INFO] Phat hien containers dang chay. Bat dau kiem thu tich hop...
+
+--- [Co ban #2] Kiem thu Endpoint /hello ---
+[PASS] Direct :8085/hello -> {"message":"Hello from App Server!"}
+[PASS] Proxy /api/hello -> {"message":"Hello from App Server!"}
+
+--- [Co ban #3] Kiem tra MariaDB minicloud.notes ---
+id	title	created_at
+1	Hello from MariaDB!	2026-11-10 08:19:22
+
+--- [Mo rong #2] Kiem thu API /student (doc students.json) ---
+[PASS] Doc thanh cong 5 sinh vien tu students.json!
+
+--- [Mo rong #3A] Thuc thi kich ban SQL CRUD tu dong (crud_practice.sql) ---
+THAO TÁC CRUD
+>>> BƯỚC 1: TRUY VẤN DANH SÁCH SINH VIÊN HIỆN CÓ (READ BAN ĐẦU)
+id	student_id	fullname	dob	major
+1	SV001	Nguyen Van A (Member 1)	2005-02-26	Cloud Computing
+2	SV002	Tran Thi B (Member 2)	2005-05-14	Software Engineering
+3	SV003	Le Van C (Member 3)	2005-08-20	Cyber Security
+4	SV004	Pham Thi D (Member 4)	2005-11-10	Data Science
+THAO TÁC CRUD
+>>> BƯỚC 2: THÊM MỚI SINH VIÊN SV005 (CREATE / INSERT)
+id	student_id	fullname	dob	major
+7	SV005	Hoang Minh E	2005-03-19	Information Systems
+THAO TÁC CRUD
+>>> BƯỚC 3: CẬP NHẬT CHUYÊN NGÀNH CỦA SV005 (UPDATE)
+id	student_id	fullname	dob	major
+7	SV005	Hoang Minh E (Updated)	2005-03-19	Cloud Computing & DevOps
+THAO TÁC CRUD
+>>> BƯỚC 4: XÓA SINH VIÊN SV005 KHỎI HỆ THỐNG (DELETE)
+THAO TÁC CRUD
+>>> TRẠNG THÁI CUỐI CÙNG SAU KHI THỰC HIỆN TRỌN BỘ CRUD
+id	student_id	fullname	dob	major
+1	SV001	Nguyen Van A (Member 1)	2005-02-26	Cloud Computing
+2	SV002	Tran Thi B (Member 2)	2005-05-14	Software Engineering
+3	SV003	Le Van C (Member 3)	2005-08-20	Cyber Security
+4	SV004	Pham Thi D (Member 4)	2005-11-10	Data Science
+
+--- [Mo rong #3B] Kiem thu REST API CRUD (/api/students-db) ---
+[PASS] GET /api/students-db -> Tim thay 4 sinh vien
+[PASS] POST /api/students-db -> Student created successfully
+[PASS] PUT /api/students-db/SV888 -> Student updated successfully
+[PASS] DELETE /api/students-db/SV888 -> Student deleted successfully
+
+=================================================================
+   HOAN TAT KIEM THU TASK 2 (BACKEND & DATA LEAD)                
+=================================================================
+

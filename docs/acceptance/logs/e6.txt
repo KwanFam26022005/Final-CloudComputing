@@ -1,0 +1,42 @@
+# e6 | Local | 2026-11-10 15:44:30
+ Container internal-dns-server  Restarting
+ Container internal-dns-server  Started
+--- app-backend.cloud.local
+10.10.10.20
+--- minio.cloud.local
+10.10.10.30
+--- keycloak.cloud.local
+10.10.10.40
+
+=================================================================
+  TASK 6 | DNS / BIND9 | HUNG 52300107
+=================================================================
+
+[PHAN 1] Docker / named-checkconf
+
+[PHAN 2] Ban ghi A / UDP / TCP
+
+--- DNS +notcp ---
+[PASS] web-frontend-server.cloud.local +notcp -> 10.10.10.10
+[PASS] app-backend.cloud.local +notcp -> 10.10.10.20
+[PASS] minio.cloud.local +notcp -> 10.10.10.30
+[PASS] keycloak.cloud.local +notcp -> 10.10.10.40
+
+--- DNS +tcp ---
+[PASS] web-frontend-server.cloud.local +tcp -> 10.10.10.10
+[PASS] app-backend.cloud.local +tcp -> 10.10.10.20
+[PASS] minio.cloud.local +tcp -> 10.10.10.30
+[PASS] keycloak.cloud.local +tcp -> 10.10.10.40
+
+[PHAN 3] Thong mang
+[PASS] Ping web
+[PASS] Ping app-server
+[PASS] Ping db
+[PASS] Ping keycloak
+[PASS] Ping minio
+[PASS] Ping prometheus
+[PASS] Ping grafana
+[PASS] Ping dns-server
+
+SUMMARY TASK6: FAIL=0
+

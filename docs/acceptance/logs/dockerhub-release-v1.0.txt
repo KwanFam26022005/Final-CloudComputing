@@ -1,0 +1,17 @@
+Verified at approximately 2026-11-10 16:14 GMT+7.
+Source commit: f0acb6805c98ef91a7a5065d77d1659e57da8d34 (main).
+docker login: Login Succeeded, username kwan2602.
+docker-compose.exe build web-frontend-server application-backend-server: exit 0.
+docker-compose.exe push web-frontend-server application-backend-server: exit 0.
+
+Anonymous Docker Hub API requests returned tag v1.0 for both repositories:
+https://hub.docker.com/v2/repositories/kwan2602/myminicloud-web/tags/v1.0
+Digest: sha256:3194f8a9596d1578cdfc44efede865fca7bfad4e1cb004f5d2ab11158c648998
+Last updated: 2026-11-10T09:13:42.654443Z
+
+https://hub.docker.com/v2/repositories/kwan2602/myminicloud-app/tags/v1.0
+Digest: sha256:6e128413d98b0813f49ab83f2e71149de73837b055b8bd9756b6dac06affdacd
+Last updated: 2026-11-10T09:13:47.373246Z
+
+Both images include linux/amd64 manifests and provenance attestations.
+Local acceptance containers were not recreated for this publication.

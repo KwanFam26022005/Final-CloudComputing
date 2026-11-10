@@ -1,0 +1,23 @@
+%% Nguon Mermaid cho luong-request.png (PNG thuc te ve bang Pillow vi khong chay duoc npx mermaid-cli)
+flowchart TB
+  subgraph F1["1. Web"]
+    c1([Client]) --> g1["Gateway :80 location /"] --> ws["web-frontend-server 1 / 2<br/>Round Robin, X-Served-By"]
+  end
+  subgraph F2["2. API + DB"]
+    c2([Client]) --> g2["Gateway /api/*, /student/"] --> a2["application-backend :8081"]
+    a2 --> d2[("MariaDB studentdb")]
+    a2 --> j2["students.json"]
+  end
+  subgraph F3a["3a. OIDC - lay token"]
+    c3([Client]) -->|"POST /token (sv01)"| k3["Keycloak :8081 realm_52300107"]
+    k3 -->|"access_token"| c3
+  end
+  subgraph F3b["3b. OIDC - goi API"]
+    c4([Client]) -->|"Bearer token"| g4["Gateway /api/secure"] --> a4["application-backend"]
+    a4 -->|"JWKS, verify RS256"| k4["Keycloak"]
+  end
+  subgraph F4["4. Giam sat"]
+    ne4["Node Exporter :9100"] -->|/metrics| p4["Prometheus :9090"]
+    wm["web1:80 / web2:80 /metrics"] -->|/metrics| p4
+    p4 --> g5["Grafana :3000<br/>System Health of 52300140"]
+  end

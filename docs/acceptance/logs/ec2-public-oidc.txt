@@ -1,0 +1,9 @@
+Realm: realm_52300107
+
+--- Tai khoan sv01 ---
+PASS sv01: Token HTTP 200; UserInfo HTTP 200; identity/issuer/client match; aud includes myapp
+
+--- Tai khoan sv02 ---
+PASS sv02: Token HTTP 200; UserInfo HTTP 200; identity/issuer/client match; aud includes myapp
+
+Tokens/passwords were not printed or saved to files.

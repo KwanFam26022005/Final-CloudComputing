@@ -1,0 +1,3 @@
+# e9 | Local | 2026-11-10 15:44:46
+[{"gpa":3.85,"id":"SV001","major":"Cloud Computing & DevOps","name":"Nguyen Van A (Member 1)"},{"gpa":3.78,"id":"SV002","major":"Software Engineering","name":"Tran Thi B (Member 2)"},{"gpa":3.82,"id":"SV003","major":"Cyber Security & Network","name":"Le Van C (Member 3)"},{"gpa":3.9,"id":"SV004","major":"Data Science & Cloud","name":"Pham Thi D (Member 4)"},{"gpa":3.65,"id":"SV005","major":"Information Systems","name":"Hoang Minh E"}]
+

@@ -1,0 +1,68 @@
+=================================================================
+   MYMINICLOUD - KIEM THU TU DONG 10 MUC MO RONG (5.0 DIEM)      
+=================================================================
+
+[Mo rong #1] Web Frontend Blog 3 bai viet HTML...
+  [PASS] /blog/blog1.html -> HTTP 200
+  [PASS] /blog/blog2.html -> HTTP 200
+  [PASS] /blog/blog3.html -> HTTP 200
+
+[Mo rong #2] Backend API /student (tu students.json)...
+  [PASS] /api/student tra ve 5 sinh vien.
+
+[Mo rong #3] Database studentdb.students & API /api/students-db...
+id	student_id	fullname	dob	major
+1	SV001	Nguyen Van A (Member 1)	2005-02-26	Cloud Computing
+2	SV002	Tran Thi B (Member 2)	2005-05-14	Software Engineering
+3	SV003	Le Van C (Member 3)	2005-08-20	Cyber Security
+4	SV004	Pham Thi D (Member 4)	2005-11-10	Data Science
+  [PASS] studentdb.students truy van duoc
+{"count":4,"source":"MariaDB (studentdb.students)","students":[{"dob":"2005-02-26","fullname":"Nguyen Van A (Member 1)","id":1,"major":"Cloud Computing","student_id":"SV001"},{"dob":"2005-05-14","fullname":"Tran Thi B (Member 2)","id":2,"major":"Software Engineering","student_id":"SV002"},{"dob":"2005-08-20","fullname":"Le Van C (Member 3)","id":3,"major":"Cyber Security","student_id":"SV003"},{"dob":"2005-11-10","fullname":"Pham Thi D (Member 4)","id":4,"major":"Data Science","student_id":"SV004"}]}
+  [PASS] /api/students-db tra ve 4 ban ghi tu MariaDB.
+
+[Mo rong #4] Keycloak OIDC Realm realm_52300107 + Token + /api/secure...
+{"client_id":"flask-app","message":"Secure resource OK","preferred_username":"sv01","realm":"realm_52300107"}
+  [PASS] OIDC /api/secure OK -> preferred_username=sv01
+
+[Mo rong #5] MinIO avatar va PDF bao cao...
+  [PASS] Avatar HTTP 200
+[UI] Mo avatar an danh; trong documents kiem PDF bao cao, tai ve va mo noi dung.
+
+[Mo rong #6] Internal DNS (app-backend, minio, keycloak.cloud.local)...
+  web-frontend-server.cloud.local -> 10.10.10.10
+  [PASS] web-frontend-server.cloud.local -> 10.10.10.10
+  app-backend.cloud.local -> 10.10.10.20
+  [PASS] app-backend.cloud.local -> 10.10.10.20
+  minio.cloud.local -> 10.10.10.30
+  [PASS] minio.cloud.local -> 10.10.10.30
+  keycloak.cloud.local -> 10.10.10.40
+  [PASS] keycloak.cloud.local -> 10.10.10.40
+
+[Mo rong #7] Prometheus Scrape Target 'web' (web-frontend-server:80/metrics)...
+  [PASS] job=web web-frontend-server2:80 -> UP
+  [PASS] job=web web-frontend-server:80 -> UP
+
+[Mo rong #8] Grafana Dashboard 'System Health of <MSSV>' (3 bieu do)...
+  Dashboard uid=system-health-52300140:
+    "title":"CPU Usage (%)"
+    "title":"Memory Usage (%)"
+    "title":"Network Traffic"
+    "title":"System Health of 52300140"
+  [PASS] Dashboard co 3 bieu do
+
+[Mo rong #9] API Gateway Route /student/...
+  [PASS] http://localhost/student/ tra ve 5 sinh vien.
+
+[Mo rong #10] Load Balancing Round Robin (web-frontend-server1 & 2)...
+Request #1 -> X-Served-By: web-frontend-server2 (Replica)
+Request #2 -> X-Served-By: web-frontend-server1 (Primary)
+Request #3 -> X-Served-By: web-frontend-server2 (Replica)
+Request #4 -> X-Served-By: web-frontend-server1 (Primary)
+Request #5 -> X-Served-By: web-frontend-server2 (Replica)
+Request #6 -> X-Served-By: web-frontend-server1 (Primary)
+  [PASS] Round Robin: thay ca web-frontend-server1 va web-frontend-server2
+
+=================================================================
+   HOAN TAT KIEM THU PHAN MO RONG!                               
+=================================================================
+SUMMARY: PASS=17 FAIL=0

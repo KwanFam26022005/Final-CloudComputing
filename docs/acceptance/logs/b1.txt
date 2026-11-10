@@ -1,0 +1,40 @@
+# b1 | Local | 2026-11-10 15:42:35
+  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+                                 Dload  Upload  Total   Spent   Left   Speed
+
+  0      0   0      0   0      0      0      0                              0
+  0  14562   0      0   0      0      0      0                              0
+  0  14562   0      0   0      0      0      0                              0
+  0  14562   0      0   0      0      0      0                              0
+HTTP/1.1 200 OK
+Server: nginx/1.30.6
+Date: Tue, 10 Nov 2026 08:42:35 GMT
+Content-Type: text/html
+Content-Length: 14562
+Last-Modified: Tue, 10 Nov 2026 08:31:53 GMT
+Connection: keep-alive
+ETag: "6af2d679-38e2"
+X-Served-By: web-frontend-server1 (Primary)
+Accept-Ranges: bytes
+
+  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+                                 Dload  Upload  Total   Spent   Left   Speed
+
+  0      0   0      0   0      0      0      0                              0
+  0   8967   0      0   0      0      0      0                              0
+  0   8967   0      0   0      0      0      0                              0
+  0   8967   0      0   0      0      0      0                              0
+HTTP/1.1 200 OK
+Server: nginx/1.30.6
+Date: Tue, 10 Nov 2026 08:42:35 GMT
+Content-Type: text/html
+Content-Length: 8967
+Last-Modified: Tue, 10 Nov 2026 08:12:21 GMT
+Connection: keep-alive
+ETag: "6af2d1e5-2307"
+X-Served-By: web-frontend-server1 (Primary)
+Accept-Ranges: bytes
+
+  <title>MyMiniCloud – Home</title>
+  <title>MyMiniCloud – Blog</title>
+
