@@ -1,0 +1,16 @@
+2026-11-10, approximately 21:25 GMT+7
+Input: D:/Users/final_cloud_computing.zip
+Output PDF: output/pdf/bao-cao-cuoi-ky-myminicloud.pdf
+Output source ZIP: output/final_cloud_computing_updated.zip
+Compiler: pdfLaTeX, exit 0. Page count: 50.
+No overfull box, undefined references or missing referenced evidence images.
+Original logo and four supplied signature image bytes preserved unchanged.
+Source ZIP: 34 files, CRC validation passed, no credential files included.
+
+PDF bytes: 5166990
+SHA256: f990619b02eb7d8956a9617aac2308eeeb67108bebdb66484390fbdb528ead7d
+Local documents/bao-cao-cuoi-ky.pdf: uploaded and downloaded hash matches.
+EC2 documents/bao-cao-cuoi-ky.pdf: uploaded and downloaded hash matches.
+
+PDF and source ZIP are local deliverables; Overleaf was not changed directly.
+Remaining: personal avatar, video, AWS Console/SG screenshots, EC2 admin UI evidence.

@@ -74,7 +74,18 @@ Sau restart: `studentdb.students` còn 4 dòng, bucket MinIO + avatar public cò
 - T0.1: `docker compose config` hợp lệ; ghi thêm dòng `T01TEST`, `down` → `up -d` → `COUNT(*)` giữ nguyên (5), sau đó đã xóa dòng thử (còn 4).
 - T0.2: cụm khỏe → `FAIL=0` exit 0 (ps1 và sh). `docker stop web-frontend-server2` → `verify-extended` báo 2 FAIL (target web2 DOWN, Round Robin chỉ thấy server1), exit 1 (ps1 và sh); đã `docker start` lại. `verify-base` không kiểm web2 nên vẫn `FAIL=0`.
 
-## Dữ liệu placeholder (cần thay)
+## Cập nhật báo cáo từ ZIP ngày 10/11/2026, khoảng 21:25 (GMT+7)
+
+- Nguồn: `D:/Users/final_cloud_computing.zip`; giữ nguyên logo và bốn ảnh chữ ký được cung cấp.
+- Đã điền năm chương, kết quả Local/EC2, liên kết phát hành và phụ lục; xuất PDF 50 trang bằng pdfLaTeX, kiểm tra trang render, không còn overfull box hoặc ảnh tham chiếu bị thiếu.
+- PDF: `output/pdf/bao-cao-cuoi-ky-myminicloud.pdf` (5,166,990 bytes).
+- SHA256: `f990619b02eb7d8956a9617aac2308eeeb67108bebdb66484390fbdb528ead7d`.
+- ZIP nguồn: `output/final_cloud_computing_updated.zip`, chứa main.tex và đầy đủ ảnh; không chứa .env, credential hay private key. Chưa upload trực tiếp Overleaf.
+- Đã upload `documents/bao-cao-cuoi-ky.pdf` trên cả Local và EC2; tải lại bằng SDK cho SHA256 trùng bản PDF xuất.
+- Các mô tả PDF placeholder ở lượt nghiệm thu 15:44/16:23 bên dưới là dữ liệu lịch sử. Hiện bucket đã có bản báo cáo mới; avatar cá nhân vẫn tạm, video và ảnh AWS Console/SG còn thiếu. Báo cáo ghi 10 mục mở rộng đã triển khai kỹ thuật, 9/10 mục hoàn tất dữ liệu.
+- EC2 vẫn có 11 container Up khi kiểm tra lại lúc 21:21. IP người dùng đổi; đã bổ sung SSH 22 cho 27.78.104.84/32 để tải báo cáo. Các rule quản trị khác chưa thay đổi.
+
+## Dữ liệu placeholder trong lượt nghiệm thu trước (cần theo dõi)
 - `profile-pics/avatar.jpg`: ảnh JPEG **tạm** do executor sinh bằng Pillow (400×400). **Người dùng thay bằng ảnh thật**, giữ nguyên tên và policy.
 - `documents/bao-cao-nhap.pdf`: PDF 1 trang **nháp** (610 B, chữ ASCII "PDF nhap bao cao - se thay ban cuoi"). **Thay bằng PDF báo cáo cuối ở T5.1** (cả Local và EC2) và chụp lại `mo-rong-storage.png`.
 
