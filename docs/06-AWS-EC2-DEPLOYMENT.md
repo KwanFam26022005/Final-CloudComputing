@@ -16,15 +16,15 @@ Hệ thống có 2 custom image được build từ `Dockerfile` riêng của nh
 # Bước 1: Đăng nhập vào Docker Hub trên terminal
 docker login
 
-# Bước 2: Build image với tên tài khoản Docker Hub của bạn (thay <dockerhub_user> bằng username thật)
-docker build -t <dockerhub_user>/myminicloud-web:latest ./web-frontend-server
-docker build -t <dockerhub_user>/myminicloud-app:latest ./application-backend-server
+# Bước 2: Build hai image phát hành của nhóm
+docker build -t kwan2602/myminicloud-web:v1.0 ./web-frontend-server
+docker build -t kwan2602/myminicloud-app:v1.0 ./application-backend-server
 
 # Bước 3: Push cả 2 image lên Docker Hub
-docker push <dockerhub_user>/myminicloud-web:latest
-docker push <dockerhub_user>/myminicloud-app:latest
+docker push kwan2602/myminicloud-web:v1.0
+docker push kwan2602/myminicloud-app:v1.0
 ```
-> 📸 **Lưu ý Báo cáo:** Chụp ảnh màn hình trang Docker Hub Repository hiển thị 2 image `<dockerhub_user>/myminicloud-web` và `<dockerhub_user>/myminicloud-app` để đưa vào **Phụ lục** báo cáo.
+> Docker Hub: [myminicloud-web](https://hub.docker.com/r/kwan2602/myminicloud-web/tags) và [myminicloud-app](https://hub.docker.com/r/kwan2602/myminicloud-app/tags), tag `v1.0`. Chụp trang hai repository để đưa vào Phụ lục báo cáo. Build/push riêng hai service này; không build đồng thời hai web replica dùng chung một tag.
 
 ---
 
@@ -98,11 +98,23 @@ newgrp docker
 git clone https://github.com/KwanFam26022005/Final-CloudComputing.git
 cd Final-CloudComputing
 
-# Tạo file .env và cập nhật KC_HOSTNAME thành Public IP của EC2 (hoặc giữ nguyên vì KC_HOSTNAME_STRICT=false)
+# Tạo file .env; giữ namespace kwan2602 và tag v1.0.
+# Đổi mật khẩu quản trị lab trước khi chạy trên EC2.
+# Keycloak lấy hostname từ request, không cần đặt KC_HOSTNAME.
 cp .env.example .env
 
-# Build và chạy toàn bộ 10+ containers
-docker compose up -d --build
+# Kéo Web và App đã phát hành trên Docker Hub.
+docker compose pull web-frontend-server application-backend-server
+
+# Build MinIO tùy chỉnh và chạy toàn bộ 11 container.
+docker compose build object-storage-server
+docker compose up -d --no-build
+
+# Nếu muốn build lại Web/App từ source, chỉ build hai service sau,
+# tránh build song song hai Web replica cùng tag.
+# docker compose build web-frontend-server application-backend-server
+
+# Các bucket, avatar, PDF và policy MinIO phải được tạo sau khi deploy.
 
 # Kiểm tra trạng thái
 docker compose ps
