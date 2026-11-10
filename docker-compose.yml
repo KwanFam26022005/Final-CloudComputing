@@ -11,6 +11,10 @@ networks:
 
 volumes:
   grafana-data:
+  mariadb_data:
+  keycloak_data:
+    # Reuse the existing lab volume by its stable name.
+    name: n07-keycloak-data
 
 services:
   # ---------------------------------------------------------------------------
@@ -93,6 +97,7 @@ services:
       MARIADB_DATABASE: "${MARIADB_DATABASE:-minicloud}"
     volumes:
       - ./relational-database-server/init:/docker-entrypoint-initdb.d:ro
+      - mariadb_data:/var/lib/mysql
     ports:
       - "${DB_PORT:-3306}:3306"
     networks:
@@ -256,8 +261,3 @@ services:
           - proxy
           - gateway
     restart: unless-stopped
-
-# Managed on new machines; reuse the existing lab volume by its stable name.
-volumes:
-  keycloak_data:
-    name: n07-keycloak-data
