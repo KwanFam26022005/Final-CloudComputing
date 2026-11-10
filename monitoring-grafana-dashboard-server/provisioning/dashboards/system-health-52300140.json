@@ -4,7 +4,7 @@
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
+  "graphTooltip": 1,
   "id": null,
   "links": [],
   "panels": [
@@ -13,20 +13,26 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "description": "Phần trăm thời gian CPU KHÔNG ở trạng thái idle, trung bình trên tất cả các nhân.",
       "fieldConfig": {
         "defaults": {
-          "unit": "percent"
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "fillOpacity": 15
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 8,
         "x": 0,
         "y": 0
       },
       "id": 1,
-      "title": "1. CPU Usage (%) - node_cpu_seconds_total",
+      "title": "CPU Usage (%)",
       "type": "timeseries",
       "targets": [
         {
@@ -37,15 +43,6 @@
           "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)",
           "legendFormat": "CPU Usage % ({{instance}})",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(node_cpu_seconds_total[1m])",
-          "legendFormat": "{{mode}} - cpu{{cpu}}",
-          "refId": "B"
         }
       ]
     },
@@ -54,20 +51,26 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "description": "Phần trăm RAM đã dùng = 1 - MemAvailable / MemTotal.",
       "fieldConfig": {
         "defaults": {
-          "unit": "bytes"
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "fillOpacity": 15
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 8,
         "x": 8,
         "y": 0
       },
       "id": 2,
-      "title": "2. Memory Usage (Available Bytes) - node_memory_MemAvailable_bytes",
+      "title": "Memory Usage (%)",
       "type": "timeseries",
       "targets": [
         {
@@ -75,8 +78,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "node_memory_MemAvailable_bytes",
-          "legendFormat": "Available Memory ({{instance}})",
+          "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100",
+          "legendFormat": "Memory Usage % ({{instance}})",
           "refId": "A"
         }
       ]
@@ -86,20 +89,25 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "description": "Tốc độ nhận (RX) và gửi (TX) theo byte/giây của từng card mạng, bỏ qua loopback.",
       "fieldConfig": {
         "defaults": {
-          "unit": "Bps"
+          "unit": "Bps",
+          "min": 0,
+          "custom": {
+            "fillOpacity": 15
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 8,
         "x": 16,
         "y": 0
       },
       "id": 3,
-      "title": "3. Network Traffic (Receive Bytes) - node_network_receive_bytes_total",
+      "title": "Network Traffic",
       "type": "timeseries",
       "targets": [
         {
@@ -107,9 +115,18 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(node_network_receive_bytes_total[1m])",
+          "expr": "rate(node_network_receive_bytes_total{device!=\"lo\"}[1m])",
           "legendFormat": "RX {{device}}",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(node_network_transmit_bytes_total{device!=\"lo\"}[1m])",
+          "legendFormat": "TX {{device}}",
+          "refId": "B"
         }
       ]
     }
@@ -128,7 +145,7 @@
     "to": "now"
   },
   "timezone": "browser",
-  "title": "System Health of SV001",
-  "uid": "system-health-sv001",
+  "title": "System Health of 52300140",
+  "uid": "system-health-52300140",
   "version": 1
 }

@@ -58,11 +58,19 @@ docker run --rm --network cloud-net mariadb:11 sh -lc 'mariadb -h db -uroot -pro
 - Đăng nhập tài khoản quản trị: **`admin` / `admin`**
 - **Kỳ vọng:** Vào được trang Admin Console của Keycloak, kiểm tra danh sách Users có user `sv01`.
 
+Kiểm thử task4: `bash scripts/verify-task4.sh` hoặc `./scripts/verify-task4.ps1`.
+Script kiểm token hai user, App/Gateway và volume. Python 3 chạy các verify Auth trong `scripts/`.
+Thao tác đăng nhập/tạo user trên UI vẫn cần minh chứng như đề.
+
 ### 5️⃣ Object Storage Server (`object-storage-server`)
 - Mở trình duyệt truy cập MinIO Console: `http://localhost:9001`
 - Đăng nhập: **`minioadmin` / `minioadmin`**
 - Tạo bucket tên **`demo`** và upload file `web-frontend-server/html/index.html`.
 - **Kỳ vọng:** File `index.html` xuất hiện trong bucket `demo`.
+
+Kiểm thử task5: `bash scripts/verify-task5.sh` hoặc `./scripts/verify-task5.ps1`.
+Script dùng venv/SDK đã hướng dẫn trong README Storage để kiểm bytes HTML, JPEG, PDF và link ký.
+Upload/download qua Console và nội dung PDF báo cáo cần kiểm thực tế.
 
 ### 6️⃣ Internal DNS Server (`internal-dns-server`)
 ```bash
@@ -70,9 +78,12 @@ docker run --rm --network cloud-net mariadb:11 sh -lc 'mariadb -h db -uroot -pro
 dig @127.0.0.1 -p 1053 web-frontend-server.cloud.local +short
 
 # Hoặc chạy dig ngay từ bên trong container mạng cloud-net (không cần cài dig trên Windows):
-docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 dig @dns-server web-frontend-server.cloud.local +short
+docker exec internal-dns-server dig "@127.0.0.1" web-frontend-server.cloud.local +short
 ```
 - **Kỳ vọng:** Trả về `10.10.10.10`.
+
+Kiểm thử task6: `bash scripts/verify-task6.sh` hoặc `./scripts/verify-task6.ps1`.
+Script kiểm cú pháp, bốn record qua UDP/TCP và ping tám alias. Chuẩn bị đủ container trước khi ping.
 
 ### 7️⃣ Monitoring Node Exporter + Prometheus (`monitoring-prometheus-server`)
 - Mở trình duyệt: `http://localhost:9090/targets`
@@ -148,36 +159,112 @@ curl -s http://localhost/api/students-db
 
 ### 🌟 Mở rộng 4: Keycloak Realm mới + Client `flask-app` + 2 Users (`sv01`, `sv02`) + Test `/secure` (`0.5đ`)
 ```bash
-# 1. Lấy Access Token cho user sv01 từ Realm realm_sv001
-TOKEN=$(curl -s -X POST "http://localhost:8081/realms/realm_sv001/protocol/openid-connect/token" \
+# 1. Lấy Access Token cho user sv01 từ Realm realm_52300107
+TOKEN=$(curl -s -X POST "http://localhost:8081/realms/realm_52300107/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "client_id=flask-app" \
   -d "username=sv01" \
   -d "password=sv01pass" \
-  -d "grant_type=password" | python -c "import sys, json; print(json.load(sys.stdin).get('access_token',''))")
+  -d "grant_type=password" | sed -n 's/.*"access_token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' )
 
-echo "Access Token: $TOKEN"
+test -n "$TOKEN" || { echo "FAIL: khong lay duoc token"; exit 1; }
 
 # 2. Gọi API /secure qua Proxy kèm Bearer Token
 curl -s -H "Authorization: Bearer $TOKEN" http://localhost/api/secure
+unset TOKEN
 ```
-- **Kỳ vọng:** Trả về `{"message":"Secure resource OK","preferred_username":"sv01","realm":"realm_sv001"}` với mã `200 OK`.
+- **Kỳ vọng:** Trả về `{"message":"Secure resource OK","preferred_username":"sv01","realm":"realm_52300107"}` với mã `200 OK`.
+
+Chạy `verify-task4.sh`/`.ps1` để kiểm cả `sv01`, `sv02`: Token/UserInfo 200; API trực tiếp và
+qua Gateway đúng identity; thiếu/sai token và sửa chữ ký bị 401. Sai issuer/audience/hết hạn và
+browser `/auth/` cần kiểm riêng. Không in/chụp token thật.
+
+Cải tiến task4:
+
+```bash
+# Recreate Auth, giu volume; co gian doan ngan.
+bash scripts/verify-task4.sh --recreate-auth
+```
+
+PowerShell: `./scripts/verify-task4.ps1 -RecreateAuth`.
+Mặc định script kiểm mount; thêm tham số recreate để kiểm tra giữ dữ liệu sau khi tạo lại container.
 
 ### 🌟 Mở rộng 5: MinIO Buckets `profile-pics` (Public Avatar) & `documents` (PDF) (`0.5đ`)
-1. Vào `http://localhost:9001`, mở bucket **`profile-pics`**, đặt Access Policy là **Public**, upload `avatar.jpg`.
+1. Vào `http://localhost:9001`, mở bucket **`profile-pics`**, upload `avatar.jpg`, cấp quyền GET public cho object theo README Storage.
 2. Truy cập trực tiếp URL public: `http://localhost:9000/profile-pics/avatar.jpg` trên trình duyệt.
 3. Tạo bucket **`documents`**, upload file PDF báo cáo và chụp màn hình minh chứng.
 
+Task5 kiểm `demo/index.html` khớp source, JPEG public, các PDF hiện có, PDF unsigned403,
+link ký200 đúng bytes và link sửa chữ ký403. PDF demo chưa thay PDF báo cáo cuối kỳ thật.
+Nếu source vừa cập nhật, đối chiếu/upload lại đúng index.html; script không tự ghi đè dữ liệu.
+
+Cải tiến tài khoản đọc: `bash scripts/verify-task5.sh --readonly` hoặc
+`./scripts/verify-task5.ps1 -ReadOnly`. Cần tài khoản `n07-storage-verifier` đã có và hai biến
+`N07_MINIO_ACCESS_KEY`, `N07_MINIO_SECRET_KEY`; nhập secret theo README Storage, không ghi vào lịch sử lệnh.
+Phép thử tạo/dọn object UUID, kiểm đọc được và PUT/DELETE/admin bị403; bucket policy/PDF cũ giữ nguyên.
+Thời điểm hết hạn link thực tế vẫn cần kiểm riêng theo README.
+
+Chuẩn bị venv SDK cho task5 (chạy một lần nếu chưa có):
+
+```bash
+python3 -m venv object-storage-server/.venv
+object-storage-server/.venv/bin/python -m pip install -r object-storage-server/requirements-client.txt
+```
+
+PowerShell: `py -3 -m venv object-storage-server/.venv`, rồi
+`./object-storage-server/.venv/Scripts/python.exe -m pip install -r object-storage-server/requirements-client.txt`.
+
+#### Chạy kiểm thử tài khoản MinIO đọc
+
+Cần tài khoản `n07-storage-verifier` và SDK theo [README Storage](../object-storage-server/README.md). Chạy từ gốc dự án; nhập mật khẩu tài khoản này khi được hỏi.
+
+Tài khoản demo local: **`n07-storage-verifier`** — mật khẩu **`123456789abcdef@`**. Mật khẩu đã cập nhật trên máy Hùng; máy khác cần tạo/cập nhật tài khoản theo README Storage với cùng mật khẩu.
+
+**Mac (zsh):**
+
+```zsh
+export N07_MINIO_ACCESS_KEY=n07-storage-verifier
+read -rs 'N07_MINIO_SECRET_KEY?Nhập mật khẩu tài khoản kiểm thử: '
+echo
+export N07_MINIO_SECRET_KEY
+PYTHONDONTWRITEBYTECODE=1 bash scripts/verify-task5.sh --readonly
+echo "Exit code: $?"
+unset N07_MINIO_ACCESS_KEY N07_MINIO_SECRET_KEY
+```
+
+**Windows (PowerShell):**
+
+```powershell
+$env:N07_MINIO_ACCESS_KEY = "n07-storage-verifier"
+$secret = Read-Host "Nhập mật khẩu tài khoản kiểm thử" -AsSecureString
+$env:N07_MINIO_SECRET_KEY = [System.Net.NetworkCredential]::new("", $secret).Password
+.\scripts\verify-task5.ps1 -ReadOnly
+Write-Host "Exit code: $LASTEXITCODE"
+Remove-Item Env:N07_MINIO_ACCESS_KEY, Env:N07_MINIO_SECRET_KEY
+Remove-Variable secret
+```
+
+**Kỳ vọng:** đọc thành công; ghi/xóa/admin bị `403`; file tạm được dọn; `SUMMARY TASK5: FAIL=0`, exit code `0`.
+
 ### 🌟 Mở rộng 6: Internal DNS thêm bản ghi `app-backend`, `minio`, `keycloak` (`0.5đ`)
 ```bash
-docker run --rm --network cloud-net internetsystemsconsortium/bind9:9.18 sh -c '
-  dig @dns-server web-frontend-server.cloud.local +short
-  dig @dns-server app-backend.cloud.local +short
-  dig @dns-server minio.cloud.local +short
-  dig @dns-server keycloak.cloud.local +short
+docker exec internal-dns-server sh -c '
+  dig @127.0.0.1 web-frontend-server.cloud.local +short
+  dig @127.0.0.1 app-backend.cloud.local +short
+  dig @127.0.0.1 minio.cloud.local +short
+  dig @127.0.0.1 keycloak.cloud.local +short
 '
 ```
 - **Kỳ vọng:** Lần lượt trả về `10.10.10.10`, `10.10.10.20`, `10.10.10.30`, `10.10.10.40`.
+
+Task6 báo từng record/protocol PASS khi `NOERROR`, có `aa` và đúng IP; đủ tám query.
+Ping báo từng đích riêng. Nếu `bad address`, dùng `docker compose ps --all` kiểm container tương ứng
+đang chạy và cùng `cloud-net`; Docker alias khác bản ghi `*.cloud.local` của Bind9.
+Task6 không tự đổi zone/restart dịch vụ.
+
+Các script riêng in `SUMMARY TASK4/5/6: FAIL=...`; exit0 khi ca đã chạy đạt, exit1 khi lỗi,
+exit2 khi thiếu điều kiện. `[NOT RUN]` là phần tùy chọn chưa được chọn, không tính PASS.
+`base`/`extended` vẫn là bộ chung; task2 của TV2 giữ nguyên. Chạy script không thay minh chứng UI/EC2.
 
 ### 🌟 Mở rộng 7: Prometheus Scrape Target `web-frontend-server:80` đạt `UP` (`0.5đ`)
 - Mở `http://localhost:9090/targets`.

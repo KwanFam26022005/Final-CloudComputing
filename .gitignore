@@ -34,6 +34,7 @@ Thumbs.db
 Desktop.ini
 
 # Logs & temporary files
+.superpowers/
 *.log
 logs/
 tmp/

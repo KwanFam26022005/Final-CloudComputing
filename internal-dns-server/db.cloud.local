@@ -1,22 +1,22 @@
 $TTL 1H
 @   IN SOA  ns.cloud.local. admin.cloud.local. (
-            2026102601 ; Serial
-            1H         ; Refresh
-            15M        ; Retry
-            1W         ; Expire
-            1H )       ; Negative Cache TTL
+            2026102601 ; Phien ban zone
+            1H         ; Chu ky cap nhat
+            15M        ; Thoi gian thu lai
+            1W         ; Thoi gian het han
+            1H )       ; TTL cache phan hoi am
 
-; Name Server Record
+; Ban ghi may chu DNS
 @                   IN NS   ns.cloud.local.
 ns                  IN A    127.0.0.1
 
 ; =============================================================================
-; BẢN GHI CƠ BẢN (#6)
+; BAN GHI CO BAN (#6)
 ; =============================================================================
 web-frontend-server IN A    10.10.10.10
 
 ; =============================================================================
-; BẢN GHI MỞ RỘNG (#6 - 0.5 điểm)
+; BAN GHI MO RONG (#6 - 0.5 diem)
 ; =============================================================================
 app-backend         IN A    10.10.10.20
 minio               IN A    10.10.10.30
