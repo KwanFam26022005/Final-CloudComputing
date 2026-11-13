@@ -59,7 +59,7 @@ function Check-Url($Name, $Url, $Contains = $null) {
     }
 }
 
-# Kiem tra route tra ve redirect 3xx (khong theo redirect), in ra Location
+# Kiem tra redirect va trang dich Keycloak, khong chap nhan redirect toi 404.
 function Check-Redirect($Name, $Url) {
     try {
         $resp = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 5 -MaximumRedirection 0 -ErrorAction Stop
@@ -70,7 +70,16 @@ function Check-Redirect($Name, $Url) {
         if ($code -ge 300 -and $code -lt 400) {
             $loc = "$($r.Headers.Location)"
             if (-not $loc) { try { $loc = ($r.Headers | Where-Object { $_.Key -eq 'Location' }).Value -join '' } catch {} }
-            Pass "$Name -> HTTP $code, Location: $loc ($Url)"
+            try {
+                $final = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 10 -MaximumRedirection 10 -ErrorAction Stop
+                if ($final.StatusCode -eq 200 -and "$($final.Content)" -match '(?i)keycloak') {
+                    Pass "$Name -> HTTP $code, Location: $loc; final HTTP 200 Keycloak ($Url)"
+                } else {
+                    Fail "$Name -> Redirect khong den trang Keycloak HTTP 200 ($Url)"
+                }
+            } catch {
+                Fail "$Name -> Trang dich redirect loi: $($_.Exception.Message)"
+            }
         } else {
             Fail "$Name -> Khong co redirect 3xx ($Url): $($_.Exception.Message)"
         }

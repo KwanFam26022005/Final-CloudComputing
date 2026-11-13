@@ -118,7 +118,7 @@ check_url "Gateway API (/api/hello)" http://localhost/api/hello "Hello from App 
 AUTH_OUT=$(curl -s -m 5 -o /dev/null -w '%{http_code} %{redirect_url}' http://localhost/auth/)
 AUTH_CODE="${AUTH_OUT%% *}"
 case "$AUTH_CODE" in
-  30[1-8]) pass "Gateway Auth (/auth/) -> HTTP $AUTH_CODE, Location: ${AUTH_OUT#* }" ;;
+  30[1-8]) check_url "Gateway Auth (/auth/), final Keycloak page" http://localhost/auth/ "keycloak" ;;
   *) fail "Gateway Auth (/auth/) -> HTTP $AUTH_CODE, ky vong redirect 3xx" ;;
 esac
 
