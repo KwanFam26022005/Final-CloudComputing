@@ -200,4 +200,3 @@ Mô hình phục vụ học tập và còn các giới hạn:
 | 06:22 | Triển khai EC2 |
 | 07:26 | Công bố ảnh container |
 | 07:42 | Tổng hợp kết quả |
-
