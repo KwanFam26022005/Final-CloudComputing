@@ -1,136 +1,203 @@
-# ☁️ MyMiniCloud – Hệ Thống Mô Phỏng Nền Tảng Đám Mây (Final Project)
+# MyMiniCloud
 
-> **Môn học:** Điện Toán Đám Mây (Cloud Computing)  
-> **Repository:** [KwanFam26022005/Final-CloudComputing](https://github.com/KwanFam26022005/Final-CloudComputing)  
-> **Mục tiêu:** Xây dựng hệ thống Cloud thu nhỏ (**MyMiniCloud**) gồm **9 loại máy chủ cốt lõi** chạy trên các Docker Container độc lập, giao tiếp qua mạng nội bộ `cloud-net`, tích hợp đầy đủ **10 yêu cầu mở rộng (Cloud App Integration Practice)** và triển khai thực tế trên **AWS EC2 (Ubuntu)**.
+Đồ án cuối kỳ môn **Điện toán đám mây**, mô phỏng chín nhóm chức năng hạ tầng trong **11 container Docker**. Hệ thống tích hợp Web, REST API, cơ sở dữ liệu, xác thực, lưu trữ đối tượng, DNS, giám sát và Gateway; được triển khai trên máy cục bộ và Ubuntu thuộc AWS EC2.
 
----
+| Tài nguyên | Liên kết |
+| --- | --- |
+| Mã nguồn chính thức | [Nhánh `main`](https://github.com/KwanFam26022005/Final-CloudComputing/tree/main) |
+| Video minh chứng | [Xem video trên Google Drive](https://drive.google.com/file/d/1A99We8Nqj2SfNNMI-GB-VwsGnWnGUIFX/view) — 8 phút 12 giây, Full HD 1920×1080, 30 fps, chú thích tiếng Việt |
+| Ảnh container Web | [`kwan2602/myminicloud-web:v1.0`](https://hub.docker.com/r/kwan2602/myminicloud-web/tags) |
+| Ảnh container ứng dụng | [`kwan2602/myminicloud-app:v1.0`](https://hub.docker.com/r/kwan2602/myminicloud-app/tags) |
+| Minh chứng trong kho mã nguồn | [Ảnh](docs/acceptance/evidence/) · [Nhật ký kiểm thử](docs/acceptance/logs/) |
 
-## Chạy từ Compose gốc
+Báo cáo PDF và `LIEN-KET.txt` được cung cấp trong gói nộp bài. Video tổng hợp các luồng chức năng, thao tác kiểm tra và kết quả quan sát; các mốc nội dung được liệt kê ở cuối trang.
 
-Yêu cầu: Docker Engine/Compose trên Ubuntu, hoặc Docker Desktop trên Windows/Mac
-ở chế độ **Linux containers**, có `docker compose` và BuildKit. Không cần cài Go
-hoặc Python trên host chỉ để khởi chạy dịch vụ. Các script Python là công cụ
-quản trị/kiểm thử tùy chọn, dùng theo README module.
+## Kiến trúc
 
-```bash
-docker compose up -d
+```mermaid
+flowchart LR
+    Client[Trình duyệt / công cụ kiểm thử] --> Gateway[Nginx Gateway :80]
+    Gateway --> Web1[Web 1]
+    Gateway --> Web2[Web 2]
+    Gateway --> App[Flask API]
+    Gateway --> Auth[Keycloak]
+    App --> DB[(MariaDB)]
+    App -->|JWKS| Auth
+    Client --> Storage[MinIO]
+    Prometheus -->|Thu thập chỉ số| Web1
+    Prometheus -->|Thu thập chỉ số| Web2
+    Prometheus --> Exporter[Node Exporter]
+    Grafana -->|Truy vấn| Prometheus
 ```
 
-Compose đã tích hợp phần thành viên 3, không cần ghép override:
-- MinIO tự build từ `object-storage-server/Dockerfile`; không pull image cũ
-  `minio/minio:latest`. Lần đầu cần Internet và thời gian build Go.
-- Keycloak tự tạo/dùng lại named volume `n07-keycloak-data`, giữ import read-only.
-- Bind9 nạp `internal-dns-server/named.conf`, có command và platform tương ứng.
+Tất cả dịch vụ tham gia mạng bridge `cloud-net` và sử dụng `restart: unless-stopped`. Docker DNS phân giải tên dịch vụ để giao tiếp nội bộ. BIND9 phục vụ riêng vùng `cloud.local`; các địa chỉ `10.10.10.x` trong vùng là dữ liệu bài thực hành, không phải IP thực được cấp cho container.
 
-Không xóa volume/data để sửa lỗi pull. Máy mới không có dữ liệu local của thành
-viên khác: khởi tạo realm mẫu, bucket/file/tài khoản hoặc chuyển dữ liệu có chủ đích.
-TV4 vẫn cần chuẩn bị `.env`, cổng, địa chỉ OIDC/public endpoint và kiểm thử trên EC2;
-không commit bí mật. Code hiện tại của các thành viên khác được giữ nguyên.
-Có thể kiểm riêng phần m3:
+| Nhóm chức năng | Thành phần | Cổng máy chủ → container |
+| --- | --- | --- |
+| Giao diện Web | Hai bản sao Nginx, trang chủ và ba bài blog | `8080 → 80`, `8082 → 80` |
+| Ứng dụng | Flask, API sinh viên và CRUD | `8085 → 8081` |
+| Cơ sở dữ liệu | MariaDB 11, `minicloud` và `studentdb` | `3306 → 3306` |
+| Xác thực | Keycloak, realm `realm_52300107`, client `flask-app` | `8081 → 8080` |
+| Lưu trữ đối tượng | MinIO API và Console | `9000 → 9000`, `9001 → 9001` |
+| DNS nội bộ | BIND9, vùng `cloud.local` | `1053 → 53`, UDP và TCP |
+| Thu thập chỉ số | Prometheus và Node Exporter | `9090 → 9090`, `9100 → 9100` |
+| Trực quan hóa | Grafana | `3000 → 3000` |
+| Cổng truy cập | Nginx Gateway, cân bằng tải Round Robin | `80 → 80` |
+
+## Khởi chạy trên máy cục bộ
+
+Cần Git và Docker Compose v2. Trên Windows/macOS, Docker Desktop phải sử dụng Linux containers. Lần xây dựng đầu tiên cần Internet; MinIO được biên dịch từ mã nguồn nên có thể mất nhiều thời gian hơn các dịch vụ khác. Không cần cài Go hoặc Python trên máy chủ để khởi chạy cụm.
+
+### 1. Lấy mã nguồn và tạo cấu hình
 
 ```bash
-docker compose up -d --no-deps object-storage-server authentication-identity-server internal-dns-server
-```
-Xem README từng module để kiểm tra chức năng; Running không thay nghiệm thu.
-
----
-
-## 📚 Mục Lục Tài Liệu Nền Tảng (`docs/`)
-
-Toàn bộ thành viên trong nhóm **BẮT BUỘC** đọc kỹ bộ tài liệu trong thư mục [`docs/`](./docs/) trước khi bắt đầu code:
-
-| Tài liệu | Nội dung chính | Đối tượng đọc |
-| :--- | :--- | :--- |
-| [**`01-BUSINESS-AND-REQUIREMENTS.md`**](./docs/01-BUSINESS-AND-REQUIREMENTS.md) | Phân tích nghiệp vụ bài toán, 9 loại server bắt buộc (5.0đ), 10 yêu cầu mở rộng (5.0đ) và tiêu chí chấm điểm tối đa (10/10). | Cả nhóm (4 thành viên) |
-| [**`02-ARCHITECTURE-AND-NETWORK.md`**](./docs/02-ARCHITECTURE-AND-NETWORK.md) | Sơ đồ kiến trúc tổng thể, luồng đi của Request, bảng quy hoạch Port/Container/Aliases, DNS Zone và cách xử lý **6 bẫy kỹ thuật** của đề bài. | Cả nhóm (4 thành viên) |
-| [**`03-RULES-AND-CONVENTIONS.md`**](./docs/03-RULES-AND-CONVENTIONS.md) | **QUY TẮC BẮT BUỘC:** Quy trình Git (Branch, Commit, PR), quy tắc cô lập thư mục, quy chuẩn Docker & bảo mật. | Cả nhóm (4 thành viên) |
-| [**`04-TEAM-WORK-DIVISION.md`**](./docs/04-TEAM-WORK-DIVISION.md) | Bảng phân công nhiệm vụ chi tiết cho **4 thành viên** (Code cơ bản + Mở rộng + Hạ tầng + Chương báo cáo) kèm Checklist cá nhân. | Cả nhóm (4 thành viên) |
-| [**`05-TESTING-AND-DEMO-GUIDE.md`**](./docs/05-TESTING-AND-DEMO-GUIDE.md) | Cẩm nang lệnh kiểm thử từng bước cho 10 bài test Cơ bản + 10 bài test Mở rộng + Hướng dẫn chụp ảnh minh chứng. | Cả nhóm (4 thành viên) |
-| [**`06-AWS-EC2-DEPLOYMENT.md`**](./docs/06-AWS-EC2-DEPLOYMENT.md) | Hướng dẫn push Docker Hub, khởi tạo máy chủ AWS EC2 (Ubuntu), mở cổng Security Group và chạy qua Public IP. | Thành viên 1, 2, 4 |
-| [**`07-REPORT-OUTLINE.md`**](./docs/07-REPORT-OUTLINE.md) | Khung sườn Báo Cáo Cuối Kỳ (5 Chương + Phụ lục) chuẩn theo yêu cầu giảng viên. | Cả nhóm (4 thành viên) |
-
----
-
-## 🏗️ Kiến Trúc 9 Loại Máy Chủ Trong Hệ Thống
-
-| STT | Thư mục / Module | Loại Máy Chủ | Công nghệ / Image | Port (Host:Container) | Network Aliases (`cloud-net`) | Phụ trách |
-| :-: | :--- | :--- | :--- | :---: | :--- | :---: |
-| **1** | [`web-frontend-server/`](./web-frontend-server/) | **Web Server** *(+ Replica LB)* | Nginx Stable (Custom Build) | `8080:80` *(Replica: `8082:80`)* | `web`, `web-frontend-server1` | **Thành viên 1** |
-| **2** | [`application-backend-server/`](./application-backend-server/) | **Application Server** | Python 3.11 + Flask + OIDC + PyMySQL | `8085:8081` | `app`, `app-server`, `app-backend` | **Thành viên 2** |
-| **3** | [`relational-database-server/`](./relational-database-server/) | **Database Server** | MariaDB 11 | `3306:3306` | `db`, `mysql`, `mariadb` | **Thành viên 2** |
-| **4** | [`authentication-identity-server/`](./authentication-identity-server/) | **Authentication Server** | Keycloak (OIDC / SSO) | `8081:8080` | `keycloak`, `auth` | **Thành viên 3** |
-| **5** | [`object-storage-server/`](./object-storage-server/) | **Object Storage Server** | MinIO (S3 Compatible) | `9000:9000`, `9001:9001` | `minio`, `storage` | **Thành viên 3** |
-| **6** | [`internal-dns-server/`](./internal-dns-server/) | **Internal DNS Server** | ISC Bind9 (`cloud.local`) | `1053:53/udp` | `dns`, `dns-server` | **Thành viên 3** |
-| **7** | [`monitoring-prometheus-server/`](./monitoring-prometheus-server/) | **Monitoring Server** *(+ Node Exporter)* | Prometheus + Node Exporter | `9090:9090` *(Exporter: `9100:9100`)* | `prometheus`, `node-exporter` | **Thành viên 4** |
-| **8** | [`monitoring-grafana-dashboard-server/`](./monitoring-grafana-dashboard-server/) | **Visualization Server** | Grafana | `3000:3000` | `grafana` | **Thành viên 4** |
-| **9** | [`api-gateway-proxy-server/`](./api-gateway-proxy-server/) | **API Gateway / Reverse Proxy** | Nginx Reverse Proxy & Load Balancer | `80:80` | `proxy`, `gateway` | **Thành viên 1** |
-
----
-
-## 👥 Phân Công Nhóm (4 Thành Viên)
-
-| Thành viên | Vai trò (Role) | Phạm vi thư mục sở hữu (Code Ownership) | Nhiệm vụ Mở rộng (5.0đ) | Phần Báo Cáo |
-| :--- | :--- | :--- | :--- | :--- |
-| **Duy** | **Gateway & Web Lead** | `web-frontend-server/`, `api-gateway-proxy-server/`, `docker-compose.yml` | **#1** (Blog 3 bài viết), **#9** (Route `/student/`), **#10** (Load Balancing Round Robin 2 Web) | Chương 1 & Chương 2 |
-| **Khoa** | **Backend & Data Lead** | `application-backend-server/`, `relational-database-server/` | **#2** (API `/student` JSON), **#3** (CSDL `studentdb` + bảng `students` + CRUD + `/students-db`) | Chương 3 (App & DB) |
-| **Hùng** | **Security, Storage & DNS Lead** | `authentication-identity-server/`, `object-storage-server/`, `internal-dns-server/` | **#4** (Keycloak Realm, Client, User, `/secure`), **#5** (MinIO `profile-pics` & `documents`), **#6** (DNS records) | Chương 3 & 4 (Auth, S3, DNS) |
-| **Nhật** | **Observability & Cloud Ops Lead** | `monitoring-prometheus-server/`, `monitoring-grafana-dashboard-server/`, `scripts/` | **#7** (Prometheus scrape `web` UP), **#8** (Grafana Dashboard 3 biểu đồ CPU/RAM/Net) + **Deploy AWS EC2** | Chương 4, Chương 5 & Phụ lục |
-
-> Chi tiết checklist từng bước cho mỗi thành viên xem tại: [**`docs/04-TEAM-WORK-DIVISION.md`**](./docs/04-TEAM-WORK-DIVISION.md).
-
----
-
-## 🚀 Hướng Dẫn Khởi Động Nhanh (Quick Start)
-
-### 1. Yêu cầu môi trường
-- **Docker Desktop** (Windows/macOS) hoặc **Docker Engine + Docker Compose v2** (Ubuntu/Linux).
-- **Git**, **curl**, và công cụ kiểm thử DNS (`nslookup` hoặc `dig`).
-
-### 2. Khởi tạo và chạy toàn bộ cụm MiniCloud
-```bash
-# 1. Clone dự án về máy
 git clone https://github.com/KwanFam26022005/Final-CloudComputing.git
 cd Final-CloudComputing
+```
 
-# 2. Tạo file .env từ mẫu (tùy chọn)
+Tạo `.env` trên Bash:
+
+```bash
 cp .env.example .env
+```
 
-# 3. Build các custom image (Web & App) và khởi chạy toàn bộ container
-docker compose build --no-cache
-docker compose up -d
+Hoặc trên PowerShell:
 
-# 4. Kiểm tra trạng thái các container
+```powershell
+Copy-Item .env.example .env
+```
+
+Các giá trị trong `.env.example` dành cho thực hành. Điều chỉnh mật khẩu và cổng theo môi trường; không đưa `.env` chứa thông tin đăng nhập thực tế vào Git. Realm thử nghiệm là `realm_52300107`; cấu hình chi tiết và tài khoản thử nghiệm được mô tả trong [tài liệu Keycloak](authentication-identity-server/README.md).
+
+### 2. Xây dựng ảnh và khởi động dịch vụ
+
+Các lệnh sau dùng được trong Bash và PowerShell:
+
+```bash
+docker compose config -q
+docker compose build web-frontend-server application-backend-server object-storage-server
+docker compose up -d --no-build
 docker compose ps
 ```
 
-### 3. Chạy Script Kiểm Thử Tự Động
-- **Trên Windows (PowerShell):**
-  ```powershell
-  # Kiểm thử 10 yêu cầu Cơ bản (5.0 điểm)
-  .\scripts\verify-base.ps1
+Hai dịch vụ Web dùng chung một ảnh, vì vậy chỉ xây dựng `web-frontend-server` một lần. MinIO sử dụng Dockerfile của dự án; không cần thay bằng ảnh `minio/minio:latest`.
 
-  # Kiểm thử 10 yêu cầu Mở rộng (5.0 điểm)
-  .\scripts\verify-extended.ps1
-  ```
-- **Trên Linux / macOS / AWS EC2 (Bash):**
-  ```bash
-  chmod +x scripts/*.sh
-  ./scripts/verify-base.sh
-  ./scripts/verify-extended.sh
-  ```
+Sau khi container sẵn sàng, mở [Gateway](http://localhost/). Nếu dịch vụ chưa phản hồi, xem trạng thái và nhật ký:
 
----
+```bash
+docker compose ps
+docker compose logs --tail=100 api-gateway-proxy-server authentication-identity-server
+```
 
-## 🔗 Danh Sách Điểm Truy Cập Nhanh (Endpoints)
+### 3. Chuẩn bị dữ liệu thực hành
 
-- **API Gateway (Điểm vào hợp nhất):** `http://localhost/`
-  - Trang Web qua Proxy: `http://localhost/` và `http://localhost/blog/`
-  - Backend API qua Proxy: `http://localhost/api/hello`, `http://localhost/api/student`, `http://localhost/student/`
-  - Keycloak qua Proxy: `http://localhost/auth/`
-- **Web Frontend trực tiếp (Node 1 / Node 2):** `http://localhost:8080/` | `http://localhost:8082/`
-- **Application Backend trực tiếp:** `http://localhost:8085/hello`
-- **Keycloak Admin Console:** `http://localhost:8081` *(Tài khoản: `admin` / `admin`)*
-- **MinIO Console (Object Storage):** `http://localhost:9001` *(Tài khoản: `minioadmin` / `minioadmin`)*
-- **Prometheus UI:** `http://localhost:9090/targets`
-- **Grafana Dashboard:** `http://localhost:3000` *(Tài khoản: `admin` / `admin`)*
+SQL khởi tạo, realm Keycloak và cấu hình Grafana được nạp từ mã nguồn. SQL chỉ chạy khi vùng dữ liệu MariaDB được khởi tạo lần đầu; realm import không ghi đè realm đã tồn tại.
+
+Dữ liệu MinIO không được đóng gói trong Git. Trên máy mới, thực hiện theo [hướng dẫn lưu trữ](object-storage-server/README.md) để:
+
+1. Tạo bucket `demo`, tải lên `web-frontend-server/html/index.html`, tải xuống và đối chiếu nội dung.
+2. Tạo `profile-pics`, tải ảnh JPEG `avatar.jpg` và chỉ cấp quyền đọc ẩn danh cho đối tượng cần công khai. Cấu hình minh chứng có thêm `avatar-2.jpg` và `avatar-3.jpg`.
+3. Tạo `documents`, tải báo cáo PDF lên và giữ bucket riêng tư.
+
+Chỉ kiểm tra trạng thái container `Up` chưa đủ xác nhận các dữ liệu và quyền truy cập này đã được chuẩn bị.
+
+## Các điểm truy cập
+
+| Chức năng | Địa chỉ cục bộ |
+| --- | --- |
+| Trang chủ / Blog qua Gateway | `http://localhost/` · `http://localhost/blog/` |
+| API kiểm tra | `http://localhost/api/hello` |
+| Năm sinh viên từ JSON | `http://localhost/api/student` · `http://localhost/student/` |
+| Sinh viên từ MariaDB | `http://localhost/api/students-db` |
+| API có xác thực | `http://localhost/api/secure` — cần Bearer token |
+| Keycloak qua Gateway | `http://localhost/auth/` — chuyển hướng đến giao diện Keycloak |
+| Hai máy chủ Web trực tiếp | `http://localhost:8080/` · `http://localhost:8082/` |
+| API Flask trực tiếp | `http://localhost:8085/hello` |
+| Keycloak trực tiếp | `http://localhost:8081/` |
+| MinIO Console / ảnh công khai | `http://localhost:9001/` · `http://localhost:9000/profile-pics/avatar.jpg` |
+| Prometheus | `http://localhost:9090/targets` |
+| Grafana | `http://localhost:3000/` |
+
+Gateway phân phối yêu cầu Web qua hai bản sao theo Round Robin. Header `X-Served-By` nhận diện máy chủ phục vụ. Các tuyến `/admin/`, `/realms/` và `/resources/` được chuyển tiếp đến Keycloak để hoàn tất luồng chuyển hướng từ `/auth/`.
+
+## Kiểm thử
+
+Chạy từ thư mục gốc dự án sau khi dịch vụ và dữ liệu đã sẵn sàng.
+
+**PowerShell:**
+
+```powershell
+.\scripts\verify-base.ps1
+.\scripts\verify-extended.ps1
+```
+
+**Bash trên Linux hoặc EC2:**
+
+```bash
+bash scripts/verify-base.sh
+bash scripts/verify-extended.sh
+```
+
+Các tập lệnh trả mã thoát `1` nếu ghi nhận lỗi. Nếu thay mật khẩu MariaDB hoặc Grafana trong `.env`, cần đặt các biến shell tương ứng (`MARIADB_ROOT_PASSWORD`, `GF_SECURITY_ADMIN_USER`, `GF_SECURITY_ADMIN_PASSWORD`) trước khi chạy; các tập lệnh này không tự nạp `.env`.
+
+| Nhóm kiểm thử | Kết quả của cấu hình đã nghiệm thu |
+| --- | --- |
+| Cơ bản | `PASS=26 FAIL=0` trên máy cục bộ và EC2 |
+| Mở rộng | `PASS=17 FAIL=0` trên máy cục bộ và EC2 |
+| API bảo vệ | Mỗi tuyến: hai tài khoản hợp lệ nhận 200; thiếu token, token sai định dạng và chữ ký bị sửa nhận 401 |
+| Round Robin | Sáu yêu cầu liên tiếp nhận diện luân phiên hai máy chủ Web |
+| Giám sát | Prometheus: `node` 1/1 UP, `web` 2/2 UP, `prometheus` 1/1 UP; Grafana có dữ liệu |
+
+Đây là kết quả kiểm thử chức năng trong đợt nghiệm thu 10–13/11/2026, không phải chỉ số hiệu năng hoặc bảo đảm trạng thái dịch vụ tại mọi thời điểm. Bộ kiểm thử cơ bản kiểm tra cả trang đích Keycloak sau chuyển hướng, tránh bỏ sót trường hợp `/auth/` trả 3xx nhưng trang đích lỗi 404.
+
+Kiểm thử chuyên biệt và điều kiện sử dụng được trình bày tại các README của [Flask](application-backend-server/), [Keycloak](authentication-identity-server/README.md), [MinIO](object-storage-server/README.md) và [DNS](internal-dns-server/README.md). Các thao tác tái tạo container hoặc kiểm tra quyền ghi cần được thực hiện theo đúng phạm vi của từng hướng dẫn.
+
+## Triển khai EC2 và giới hạn
+
+Môi trường nghiệm thu sử dụng Ubuntu 24.04 LTS, loại máy `c7i-flex.large`, RAM 4 GB, EBS gp3 mã hóa 30 GB tại `ap-southeast-1`. IP công khai khi kiểm tra là `13.229.212.14`; [trang chủ](http://13.229.212.14/) sử dụng cổng Gateway 80. Địa chỉ và khả năng truy cập có thể thay đổi theo vòng đời máy ảo.
+
+Security Group mở công khai cổng 80; SSH và các cổng quản trị chỉ cho phép IP được chỉ định. MariaDB 3306 không được mở từ Internet. Video phân biệt các phép thử HTTP qua IP công khai với ảnh giao diện EC2 truy cập qua đường hầm SSH. Tham khảo [hướng dẫn triển khai](docs/06-AWS-EC2-DEPLOYMENT.md) và [hồ sơ truy cập EC2](docs/acceptance/EC2-ACCESS.md).
+
+Mô hình phục vụ học tập và còn các giới hạn:
+
+- Flask hiện tắt kiểm tra issuer/audience của JWT; Keycloak dùng `start-dev` và hệ thống chưa có HTTPS.
+- Toàn bộ container chạy trên một máy EC2; chưa có dự phòng đa máy, tự động mở rộng hoặc kết quả thử tải.
+- Node Exporter chưa được cấu hình để quan sát đầy đủ máy chủ và từng container. Chỉ số Web hiện phản ánh khả năng phản hồi, chưa đo số yêu cầu hoặc độ trễ.
+- Chưa kiểm chứng đầy đủ token hết hạn, URL ký hết hạn, tài khoản MinIO chỉ đọc, lưu lịch sử Prometheus qua tái tạo container và phục hồi toàn cụm sau khi EC2 khởi động lại.
+
+## Tài liệu và thành viên
+
+| Tài liệu | Nội dung |
+| --- | --- |
+| [Yêu cầu](docs/01-BUSINESS-AND-REQUIREMENTS.md) | Các chức năng cơ bản và mở rộng |
+| [Kiến trúc và mạng](docs/02-ARCHITECTURE-AND-NETWORK.md) | Vai trò dịch vụ, cổng và tên miền |
+| [Quy ước làm việc](docs/03-RULES-AND-CONVENTIONS.md) | Git, tổ chức mã nguồn và cấu hình |
+| [Phân công](docs/04-TEAM-WORK-DIVISION.md) | Phạm vi thực hiện của từng thành viên |
+| [Hướng dẫn kiểm thử](docs/05-TESTING-AND-DEMO-GUIDE.md) | Các bước kiểm tra chức năng |
+| [Triển khai AWS](docs/06-AWS-EC2-DEPLOYMENT.md) | Docker Hub và EC2 |
+| [Đề cương báo cáo](docs/07-REPORT-OUTLINE.md) | Bố cục năm chương và phụ lục |
+
+| Thành viên | MSSV | Nội dung phụ trách |
+| --- | --- | --- |
+| Lê Văn Duy | 52300102 | Web, Gateway và cân bằng tải |
+| Phạm Hồng Đăng Khoa | 52300119 | Flask, MariaDB và CRUD |
+| Nguyễn Mạnh Hùng | 52300107 | Keycloak, MinIO và DNS |
+| Phan Minh Nhật | 52300140 | Prometheus, Grafana và EC2 |
+
+## Mục lục video
+
+| Thời điểm | Nội dung |
+| --- | --- |
+| 00:00 | Giới thiệu |
+| 00:10 | Hạ tầng và container |
+| 00:46 | Web và blog |
+| 01:46 | API và dữ liệu |
+| 02:40 | Xác thực |
+| 03:40 | Lưu trữ |
+| 04:40 | DNS |
+| 04:58 | Giám sát |
+| 05:52 | Gateway và cân bằng tải |
+| 06:22 | Triển khai EC2 |
+| 07:26 | Công bố ảnh container |
+| 07:42 | Tổng hợp kết quả |
+
